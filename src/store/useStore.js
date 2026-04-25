@@ -3,6 +3,7 @@ import * as api from '../api/sheetsApi'
 
 const useStore = create((set, get) => ({
   projects: [],
+  projectCache: {}, // { [projectId]: { ...fullData, subtasks, images, cachedAt } }
   loading: false,
   error: null,
   activeProjectId: null,
@@ -112,6 +113,36 @@ const useStore = create((set, get) => ({
       set({ projects: prev })
       throw new Error(res.error)
     }
+  },
+
+  // ── Detail cache ──────────────────────────────────────────────────────────
+  // Stores full project data (including subtasks + images) keyed by projectId.
+  // Used to show content instantly on modal open while a background refresh runs.
+  cacheProjectDetails: (projectId, data) => {
+    set((s) => ({
+      projectCache: {
+        ...s.projectCache,
+        [projectId]: { ...data, cachedAt: Date.now() },
+      },
+    }))
+  },
+
+  // Prefetch a project's full details so the modal opens instantly.
+  // Skips the network call if the cache is fresh (< 30 s old).
+  prefetchProject: async (projectId) => {
+    const cached = get().projectCache[projectId]
+    if (cached && Date.now() - cached.cachedAt < 30_000) return
+    try {
+      const res = await api.fetchProject(projectId)
+      if (res.success) {
+        set((s) => ({
+          projectCache: {
+            ...s.projectCache,
+            [projectId]: { ...res.data, cachedAt: Date.now() },
+          },
+        }))
+      }
+    } catch { /* prefetch is best-effort — silent failure is fine */ }
   },
 
   // ── Active project (modal) ────────────────────────────────────────────────

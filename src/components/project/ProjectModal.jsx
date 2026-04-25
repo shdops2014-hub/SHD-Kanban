@@ -35,7 +35,7 @@ function daysSince(dateStr) {
 }
 
 export default function ProjectModal({ projectId, open, onClose, defaultStage }) {
-  const { addProject, editProject, removeProject, projects } = useStore()
+  const { addProject, editProject, removeProject, projects, projectCache, cacheProjectDetails } = useStore()
 
   const isNew = !projectId
 
@@ -95,18 +95,33 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       return
     }
 
-    // 1. Pre-fill form instantly from store cache
+    // 1. Pre-fill form instantly from store summary cache
     const cached = projects.find(p => p.projectId === projectId)
     if (cached) {
       resetFormFromProject(cached)
       setCurrentProjectId(cached.projectId)
     }
 
-    // 2. Fetch full details in background for subtasks + images
-    setDetailsLoading(true)
+    // 2. If detail cache exists (from a previous open or hover-prefetch), show
+    //    subtasks + images immediately — no loading state needed.
+    const cachedDetail = projectCache[projectId]
+    if (cachedDetail) {
+      resetFormFromProject(cachedDetail)
+      setSubtasks(cachedDetail.subtasks || [])
+      setImages(cachedDetail.images || [])
+      setCurrentProjectId(cachedDetail.projectId)
+    }
+
     setMediaChanged(false)
-    setSubtasks([])
-    setImages([])
+
+    // 3. Always re-fetch in background to stay fresh.
+    //    Only show the loading indicator when there is no cached detail yet.
+    if (!cachedDetail) {
+      setDetailsLoading(true)
+      setSubtasks([])
+      setImages([])
+    }
+
     fetchProject(projectId)
       .then(res => {
         if (res.success) {
@@ -115,9 +130,10 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
           setSubtasks(p.subtasks || [])
           setImages(p.images || [])
           setCurrentProjectId(p.projectId)
+          cacheProjectDetails(projectId, p)
         }
       })
-      .catch(() => toast.error('Failed to load project details'))
+      .catch(() => { if (!cachedDetail) toast.error('Failed to load project details') })
       .finally(() => setDetailsLoading(false))
   }, [open, projectId, isNew])
 

@@ -3,10 +3,12 @@ import { CSS } from '@dnd-kit/utilities'
 import { formatDate } from '../../utils/formatters'
 import { STAGE_COLORS } from '../../utils/constants'
 import Badge from '../ui/Badge'
+import useStore from '../../store/useStore'
 
 export default function KanbanCard({ project, onClick }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: project.projectId })
+  const prefetchProject = useStore((s) => s.prefetchProject)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -30,6 +32,7 @@ export default function KanbanCard({ project, onClick }) {
       {...attributes}
       {...listeners}
       onClick={onClick}
+      onMouseEnter={() => prefetchProject(project.projectId)}
       className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer select-none"
     >
       {/* Project title */}
