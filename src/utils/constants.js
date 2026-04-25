@@ -18,12 +18,13 @@ export const STAGE_COLORS = {
 }
 
 export const PROJECT_TYPES = [
-  { value: 'upholstery',       label: 'Upholstery' },
-  { value: 'custom_furniture', label: 'Custom Furniture' },
-  { value: 'wallpaper',        label: 'Wallpaper' },
-  { value: 'fabric',           label: 'Fabric' },
-  { value: 'lighting_decor',   label: 'Lighting & Decor' },
-  { value: 'other',            label: 'Other' },
+  { value: 'full_service_interior', label: 'Full-Service Interior' },
+  { value: 'upholstery',            label: 'Upholstery' },
+  { value: 'custom_furniture',      label: 'Custom Furniture' },
+  { value: 'wallpaper',             label: 'Wallpaper' },
+  { value: 'fabric',                label: 'Fabric' },
+  { value: 'lighting_decor',        label: 'Lighting & Decor' },
+  { value: 'other',                 label: 'Other' },
 ]
 
 export const SUBTASK_STATUSES = ['To Do', 'In Progress', 'Done']
