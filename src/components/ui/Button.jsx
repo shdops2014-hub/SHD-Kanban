@@ -12,7 +12,7 @@ export default function Button({ children, variant = 'primary', size = 'md', cla
     lg: 'px-5 py-2.5 text-base',
   }
   return (
-    <button className={`${base} ${variants[variant]} ${sizes[size]} ${className}`} {...props}>
+    <button type="button" className={`${base} ${variants[variant]} ${sizes[size]} ${className}`} {...props}>
       {children}
     </button>
   )

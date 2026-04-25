@@ -96,7 +96,7 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
               autoFocus
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setAdding(false) }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd() } if (e.key === 'Escape') setAdding(false) }}
               placeholder="Subtask title..."
               className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-shd-brown"
             />
