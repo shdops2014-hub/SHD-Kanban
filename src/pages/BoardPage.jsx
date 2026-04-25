@@ -4,7 +4,6 @@ import Header from '../components/layout/Header'
 import FilterBar from '../components/layout/FilterBar'
 import KanbanBoard from '../components/board/KanbanBoard'
 import ProjectModal from '../components/project/ProjectModal'
-import Spinner from '../components/ui/Spinner'
 import useStore from '../store/useStore'
 import { ping } from '../api/sheetsApi'
 
@@ -56,25 +55,18 @@ export default function BoardPage() {
       />
 
       <main className="flex-1 p-6 overflow-x-auto">
-        {loading && (
-          <div className="flex items-center justify-center py-24 gap-3 text-gray-400">
-            <Spinner className="w-6 h-6" />
-            <span>Loading projects…</span>
-          </div>
-        )}
         {error && (
-          <div className="text-center py-24 text-red-500">
+          <div className="text-center py-6 text-red-500 text-sm">
             Failed to load projects. Check your API connection.
           </div>
         )}
-        {!loading && !error && (
-          <KanbanBoard
-            onCardClick={openExisting}
-            onAddCard={openNew}
-            searchQuery={searchQuery}
-            typeFilter={typeFilter}
-          />
-        )}
+        <KanbanBoard
+          onCardClick={openExisting}
+          onAddCard={openNew}
+          searchQuery={searchQuery}
+          typeFilter={typeFilter}
+          loading={loading}
+        />
       </main>
 
       <ProjectModal

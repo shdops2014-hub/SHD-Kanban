@@ -7,7 +7,7 @@ import KanbanCard from './KanbanCard'
 import { STAGES } from '../../utils/constants'
 import useStore from '../../store/useStore'
 
-export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeFilter }) {
+export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeFilter, loading }) {
   const { projects, moveProject } = useStore()
   const [activeCard, setActiveCard] = useState(null)
 
@@ -77,6 +77,7 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
             projects={byStage(stage)}
             onCardClick={onCardClick}
             onAddCard={onAddCard}
+            loading={loading}
           />
         ))}
       </div>

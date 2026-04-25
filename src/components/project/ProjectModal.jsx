@@ -16,12 +16,12 @@ import useStore from '../../store/useStore'
 const STAGE_OPTIONS = STAGES.map(s => ({ value: s, label: s }))
 
 export default function ProjectModal({ projectId, open, onClose, defaultStage }) {
-  const { addProject, editProject, removeProject } = useStore()
+  const { addProject, editProject, removeProject, projects } = useStore()
 
   const isNew = !projectId
 
   const { register, handleSubmit, watch, reset, getValues, formState: { errors, isDirty } } = useForm()
-  const [loading, setLoading] = useState(false)
+  const [detailsLoading, setDetailsLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [subtasks, setSubtasks] = useState([])
   const [images, setImages] = useState([])
@@ -31,6 +31,24 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const quotedAmount = parseFloat(watch('quotedAmount')) || 0
   const depositPaid = parseFloat(watch('depositPaid')) || 0
   const balanceDue = quotedAmount - depositPaid
+
+  const resetFormFromProject = (p) => {
+    reset({
+      projectTitle: p.projectTitle || '',
+      customerName: p.customerName || '',
+      phone: p.phone || '',
+      email: p.email || '',
+      projectType: p.projectType || '',
+      stage: p.stage || STAGES[0],
+      description: p.description || '',
+      notes: p.notes || '',
+      quotedAmount: p.quotedAmount || '',
+      depositPaid: p.depositPaid || '',
+      dateReceived: p.dateReceived || '',
+      startDate: p.startDate || '',
+      targetDate: p.targetDate || '',
+    })
+  }
 
   // Load existing project data
   useEffect(() => {
@@ -42,33 +60,30 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       setCurrentProjectId(null)
       return
     }
-    setLoading(true)
+
+    // 1. Pre-fill form instantly from store cache
+    const cached = projects.find(p => p.projectId === projectId)
+    if (cached) {
+      resetFormFromProject(cached)
+      setCurrentProjectId(cached.projectId)
+    }
+
+    // 2. Fetch full details in background for subtasks + images
+    setDetailsLoading(true)
+    setSubtasks([])
+    setImages([])
     fetchProject(projectId)
       .then(res => {
         if (res.success) {
           const p = res.data
-          reset({
-            projectTitle: p.projectTitle,
-            customerName: p.customerName,
-            phone: p.phone,
-            email: p.email,
-            projectType: p.projectType,
-            stage: p.stage,
-            description: p.description,
-            notes: p.notes,
-            quotedAmount: p.quotedAmount,
-            depositPaid: p.depositPaid,
-            dateReceived: p.dateReceived,
-            startDate: p.startDate,
-            targetDate: p.targetDate,
-          })
+          resetFormFromProject(p)
           setSubtasks(p.subtasks || [])
           setImages(p.images || [])
           setCurrentProjectId(p.projectId)
         }
       })
-      .catch(() => toast.error('Failed to load project'))
-      .finally(() => setLoading(false))
+      .catch(() => toast.error('Failed to load project details'))
+      .finally(() => setDetailsLoading(false))
   }, [open, projectId, isNew])
 
   const onSubmit = async (data) => {
@@ -109,9 +124,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         title={isNew ? 'New Project' : 'Project Details'}
         wide
       >
-        {loading ? (
-          <div className="flex items-center justify-center py-16 text-gray-400">Loading…</div>
-        ) : (
+        {(
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left column */}
@@ -206,11 +219,13 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
 
                 {/* Images */}
                 {!isNew && (
-                  <ImageGallery
-                    projectId={currentProjectId}
-                    images={images}
-                    onImagesChange={setImages}
-                  />
+                  detailsLoading
+                    ? <div className="text-xs text-gray-400 animate-pulse py-2">Loading images…</div>
+                    : <ImageGallery
+                        projectId={currentProjectId}
+                        images={images}
+                        onImagesChange={setImages}
+                      />
                 )}
               </div>
             </div>
@@ -218,11 +233,14 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
             {/* Subtasks */}
             {!isNew && (
               <div className="mt-6 pt-6 border-t border-gray-100">
-                <SubtaskList
-                  projectId={currentProjectId}
-                  subtasks={subtasks}
-                  onSubtasksChange={setSubtasks}
-                />
+                {detailsLoading
+                  ? <div className="text-xs text-gray-400 animate-pulse py-2">Loading subtasks…</div>
+                  : <SubtaskList
+                      projectId={currentProjectId}
+                      subtasks={subtasks}
+                      onSubtasksChange={setSubtasks}
+                    />
+                }
               </div>
             )}
 
@@ -243,7 +261,6 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
               </div>
             </div>
           </form>
-        )}
       </Modal>
 
       <ConfirmDialog

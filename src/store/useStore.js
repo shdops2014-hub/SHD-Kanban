@@ -9,10 +9,12 @@ const useStore = create((set, get) => ({
 
   // ── Load ──────────────────────────────────────────────────────────────────
   loadProjects: async () => {
-    set({ loading: true, error: null })
+    const hasCache = get().projects.length > 0
+    // Only show loading skeleton on first load; subsequent refreshes are silent
+    if (!hasCache) set({ loading: true, error: null })
     try {
       const res = await api.fetchProjects()
-      set({ projects: res.data || [], loading: false })
+      set({ projects: res.data || [], loading: false, error: null })
     } catch (e) {
       set({ error: e.message, loading: false })
     }
