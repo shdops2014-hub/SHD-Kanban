@@ -42,7 +42,7 @@ export default function ImageGallery({ projectId, images, onImagesChange }) {
 
   const fullUrl = (driveUrl) => {
     const match = driveUrl?.match(/[-\w]{25,}/)
-    return match ? `https://drive.google.com/uc?export=view&id=${match[0]}` : driveUrl
+    return match ? `https://drive.google.com/thumbnail?id=${match[0]}&sz=w1600` : driveUrl
   }
 
   return (
