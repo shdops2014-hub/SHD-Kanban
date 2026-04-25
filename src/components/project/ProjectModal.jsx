@@ -280,13 +280,27 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   </div>
                 </div>
 
-                {/* Images — show immediately once we have a projectId */}
+                {/* Images */}
                 {!isNew && currentProjectId && (
-                  <ImageGallery
-                    projectId={currentProjectId}
-                    images={images}
-                    onImagesChange={(imgs) => { setImages(imgs); setMediaChanged(true) }}
-                  />
+                  detailsLoading ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
+                        <div className="h-4 bg-gray-200 rounded w-14 animate-pulse" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[0,1,2].map(i => (
+                          <div key={i} className="aspect-square rounded-lg bg-gray-100 animate-pulse" />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <ImageGallery
+                      projectId={currentProjectId}
+                      images={images}
+                      onImagesChange={(imgs) => { setImages(imgs); setMediaChanged(true) }}
+                    />
+                  )
                 )}
               </div>
             </div>
