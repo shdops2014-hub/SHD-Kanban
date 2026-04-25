@@ -20,7 +20,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
 
   const isNew = !projectId
 
-  const { register, handleSubmit, watch, reset, formState: { errors, isDirty } } = useForm()
+  const { register, handleSubmit, watch, reset, getValues, formState: { errors, isDirty } } = useForm()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [subtasks, setSubtasks] = useState([])
@@ -128,8 +128,24 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 />
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Input label="Phone" type="tel" placeholder="(555) 000-0000" {...register('phone')} />
-                  <Input label="Email" type="email" placeholder="email@example.com" {...register('email')} />
+                  <Input
+                    label="Phone *"
+                    type="tel"
+                    placeholder="(555) 000-0000"
+                    error={errors.phone?.message}
+                    {...register('phone', {
+                      validate: v => v?.trim() || getValues('email')?.trim() ? true : 'Phone or email is required'
+                    })}
+                  />
+                  <Input
+                    label="Email *"
+                    type="email"
+                    placeholder="email@example.com"
+                    error={errors.email?.message}
+                    {...register('email', {
+                      validate: v => v?.trim() || getValues('phone')?.trim() ? true : 'Phone or email is required'
+                    })}
+                  />
                 </div>
 
                 <Select
