@@ -7,7 +7,9 @@ const get = (action, params = {}) =>
   api.get('', { params: { action, ...params } }).then(r => r.data)
 
 const post = (action, payload = {}) =>
-  api.post('', { action, ...payload }).then(r => r.data)
+  api.post('', JSON.stringify({ action, ...payload }), {
+    headers: { 'Content-Type': 'text/plain' },
+  }).then(r => r.data)
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
