@@ -1,15 +1,24 @@
-import axios from 'axios'
-import { API_URL } from '../utils/constants'
+const API_URL = import.meta.env.VITE_API_URL
 
-const api = axios.create({ baseURL: API_URL })
+// GET — simple request, no preflight
+const get = async (action, params = {}) => {
+  const url = new URL(API_URL)
+  url.searchParams.set('action', action)
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
+  const res = await fetch(url.toString())
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
 
-const get = (action, params = {}) =>
-  api.get('', { params: { action, ...params } }).then(r => r.data)
-
-const post = (action, payload = {}) =>
-  api.post('', JSON.stringify({ action, ...payload }), {
-    headers: { 'Content-Type': 'text/plain' },
-  }).then(r => r.data)
+// POST — string body defaults to text/plain, no preflight triggered
+const post = async (action, payload = {}) => {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload }),
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
