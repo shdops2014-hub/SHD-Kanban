@@ -124,8 +124,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         title={isNew ? 'New Project' : 'Project Details'}
         wide
       >
-        {(
-          <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left column */}
               <div className="flex flex-col gap-4">
@@ -260,7 +259,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 </Button>
               </div>
             </div>
-          </form>
+        </form>
       </Modal>
 
       <ConfirmDialog
