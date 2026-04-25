@@ -25,12 +25,16 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
   }
 
   const handleStatusChange = async (subtaskId, status) => {
+    // Optimistic update
+    const prev = subtasks
+    onSubtasksChange(subtasks.map(s => s.subtaskId === subtaskId ? { ...s, status } : s))
     try {
       const res = await updateSubtask(subtaskId, { status })
-      if (res.success) {
-        onSubtasksChange(subtasks.map(s => s.subtaskId === subtaskId ? { ...s, status } : s))
-      }
-    } catch { toast.error('Failed to update subtask') }
+      if (!res.success) throw new Error(res.error)
+    } catch {
+      onSubtasksChange(prev)
+      toast.error('Failed to update subtask')
+    }
   }
 
   const handleDelete = async (subtaskId) => {
@@ -42,6 +46,12 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
   }
 
   const done = subtasks.filter(s => s.status === 'Done').length
+
+  const STATUS_STYLES = {
+    'To Do':       'bg-yellow-50 border border-yellow-200',
+    'In Progress': 'bg-green-50 border border-green-200',
+    'Done':        'bg-blue-50 border border-blue-200',
+  }
 
   return (
     <div>
@@ -64,7 +74,7 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
 
       <div className="flex flex-col gap-2">
         {subtasks.map((s) => (
-          <div key={s.subtaskId} className="flex items-center gap-3 py-2 px-3 bg-gray-50 rounded-lg group">
+          <div key={s.subtaskId} className={`flex items-center gap-3 py-2 px-3 rounded-lg group transition-colors ${STATUS_STYLES[s.status] || 'bg-gray-50'}`}>
             <input
               type="checkbox"
               checked={s.status === 'Done'}
