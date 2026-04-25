@@ -1,35 +1,33 @@
-// ════════════════════════════════════════════════════════════════════════════
-// SHD Kanban — Google Apps Script Backend
+// SHD Kanban - Google Apps Script Backend
 // Deploy as: Web App > Execute as: Me > Anyone can access
-// ════════════════════════════════════════════════════════════════════════════
 
-const SS = SpreadsheetApp.getActiveSpreadsheet();
+var SS = SpreadsheetApp.getActiveSpreadsheet();
 
-// ── Sheets ───────────────────────────────────────────────────────────────────
-function getSheet(name) { return SS.getSheetByName(name); }
+function getSheet(name) {
+  return SS.getSheetByName(name);
+}
 
-// ── Config ────────────────────────────────────────────────────────────────────
 function getConfig(key) {
-  const sheet = getSheet('Config');
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
+  var sheet = getSheet('Config');
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
     if (data[i][0] === key) return data[i][1];
   }
   return null;
 }
 
-// ── UUID generator ────────────────────────────────────────────────────────────
-function uuid(prefix) {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let id = prefix + '_';
-  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+function makeUuid(prefix) {
+  var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  var id = prefix + '_';
+  for (var i = 0; i < 8; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
   return id;
 }
 
-// ── HTTP handlers ─────────────────────────────────────────────────────────────
 function doGet(e) {
-  const action = e.parameter.action;
-  let result;
+  var action = e.parameter.action;
+  var result;
   try {
     if (action === 'getProjects') result = getProjects();
     else if (action === 'getProject') result = getProject(e.parameter.projectId);
@@ -42,13 +40,15 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  let body;
-  try { body = JSON.parse(e.postData.contents); }
-  catch (err) { return jsonResponse({ error: 'Invalid JSON body' }); }
-
-  let result;
+  var body;
   try {
-    const action = body.action;
+    body = JSON.parse(e.postData.contents);
+  } catch (err) {
+    return jsonResponse({ error: 'Invalid JSON body' });
+  }
+  var result;
+  try {
+    var action = body.action;
     if      (action === 'createProject')  result = createProject(body);
     else if (action === 'updateProject')  result = updateProject(body);
     else if (action === 'deleteProject')  result = deleteProject(body.projectId);
@@ -56,7 +56,7 @@ function doPost(e) {
     else if (action === 'updateSubtask')  result = updateSubtask(body);
     else if (action === 'deleteSubtask')  result = deleteSubtask(body.subtaskId);
     else if (action === 'uploadImage')    result = uploadImage(body);
-    else if (action === 'deleteImage')    result = deleteImageAction(body.imageId);
+    else if (action === 'deleteImage')    result = deleteImageRecord(body.imageId);
     else result = { error: 'Unknown action: ' + action };
   } catch (err) {
     result = { error: err.message };
@@ -65,18 +65,18 @@ function doPost(e) {
 }
 
 function jsonResponse(data) {
-  const success = !data.error;
-  const payload = success ? { success: true, data: data } : { success: false, error: data.error };
+  var success = !data.error;
+  var payload = success
+    ? { success: true, data: data }
+    : { success: false, error: data.error };
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// PROJECTS
-// ════════════════════════════════════════════════════════════════════════════
+// --- PROJECTS ---
 
-const PROJECT_COLS = [
+var PROJECT_COLS = [
   'projectId','stage','customerName','projectTitle','phone','email',
   'projectType','description','notes',
   'quotedAmount','depositPaid','balanceDue',
@@ -85,8 +85,10 @@ const PROJECT_COLS = [
 ];
 
 function rowToProject(row) {
-  const obj = {};
-  PROJECT_COLS.forEach((col, i) => { obj[col] = row[i] !== undefined ? row[i] : ''; });
+  var obj = {};
+  for (var i = 0; i < PROJECT_COLS.length; i++) {
+    obj[PROJECT_COLS[i]] = row[i] !== undefined ? row[i] : '';
+  }
   obj.quotedAmount = parseFloat(obj.quotedAmount) || 0;
   obj.depositPaid  = parseFloat(obj.depositPaid)  || 0;
   obj.balanceDue   = parseFloat(obj.balanceDue)   || 0;
@@ -95,127 +97,125 @@ function rowToProject(row) {
 }
 
 function getProjects() {
-  const sheet = getSheet('Projects');
-  const values = sheet.getDataRange().getValues().slice(1); // skip header
-  const subtaskSheet = getSheet('Subtasks');
-  const imageSheet   = getSheet('Images');
+  var sheet = getSheet('Projects');
+  var values = sheet.getDataRange().getValues().slice(1);
+  var subtaskValues = getSheet('Subtasks').getDataRange().getValues().slice(1);
+  var imageValues   = getSheet('Images').getDataRange().getValues().slice(1);
 
-  const subtaskValues = subtaskSheet.getDataRange().getValues().slice(1);
-  const imageValues   = imageSheet.getDataRange().getValues().slice(1);
-
-  // Count subtasks and images per project
-  const subtaskCounts = {};
-  subtaskValues.forEach(r => {
-    const pid = r[1];
+  var subtaskCounts = {};
+  for (var i = 0; i < subtaskValues.length; i++) {
+    var pid = subtaskValues[i][1];
     subtaskCounts[pid] = (subtaskCounts[pid] || 0) + 1;
-  });
-  const imageCounts = {};
-  imageValues.forEach(r => {
-    const pid = r[1];
-    imageCounts[pid] = (imageCounts[pid] || 0) + 1;
-  });
+  }
+  var imageCounts = {};
+  for (var j = 0; j < imageValues.length; j++) {
+    var ipid = imageValues[j][1];
+    imageCounts[ipid] = (imageCounts[ipid] || 0) + 1;
+  }
 
-  return values
-    .filter(r => r[0]) // skip empty rows
-    .map(r => {
-      const p = rowToProject(r);
-      p.subtaskCount = subtaskCounts[p.projectId] || 0;
-      p.imageCount   = imageCounts[p.projectId]   || 0;
-      return p;
-    });
+  var projects = [];
+  for (var k = 0; k < values.length; k++) {
+    if (!values[k][0]) continue;
+    var p = rowToProject(values[k]);
+    p.subtaskCount = subtaskCounts[p.projectId] || 0;
+    p.imageCount   = imageCounts[p.projectId]   || 0;
+    projects.push(p);
+  }
+  return projects;
 }
 
 function getProject(projectId) {
-  const sheet = getSheet('Projects');
-  const values = sheet.getDataRange().getValues().slice(1);
-  const row = values.find(r => r[0] === projectId);
+  var sheet = getSheet('Projects');
+  var values = sheet.getDataRange().getValues().slice(1);
+  var row = null;
+  for (var i = 0; i < values.length; i++) {
+    if (values[i][0] === projectId) { row = values[i]; break; }
+  }
   if (!row) throw new Error('Project not found: ' + projectId);
 
-  const project = rowToProject(row);
+  var project = rowToProject(row);
 
-  // Subtasks
-  const subtaskSheet = getSheet('Subtasks');
-  const subtaskValues = subtaskSheet.getDataRange().getValues().slice(1);
-  project.subtasks = subtaskValues
-    .filter(r => r[1] === projectId)
-    .map(r => ({
-      subtaskId: r[0], projectId: r[1], title: r[2],
-      status: r[3], assignee: r[4], dueDate: r[5],
-      createdAt: r[6], lastUpdated: r[7]
-    }));
+  var subtaskValues = getSheet('Subtasks').getDataRange().getValues().slice(1);
+  project.subtasks = [];
+  for (var j = 0; j < subtaskValues.length; j++) {
+    if (subtaskValues[j][1] === projectId) {
+      project.subtasks.push({
+        subtaskId: subtaskValues[j][0], projectId: subtaskValues[j][1],
+        title: subtaskValues[j][2], status: subtaskValues[j][3],
+        assignee: subtaskValues[j][4], dueDate: subtaskValues[j][5],
+        createdAt: subtaskValues[j][6], lastUpdated: subtaskValues[j][7]
+      });
+    }
+  }
 
-  // Images
-  const imageSheet = getSheet('Images');
-  const imageValues = imageSheet.getDataRange().getValues().slice(1);
-  project.images = imageValues
-    .filter(r => r[1] === projectId)
-    .map(r => ({
-      imageId: r[0], projectId: r[1], fileName: r[2],
-      driveUrl: r[3], driveFileId: r[4], uploadedAt: r[5]
-    }));
+  var imageValues = getSheet('Images').getDataRange().getValues().slice(1);
+  project.images = [];
+  for (var k = 0; k < imageValues.length; k++) {
+    if (imageValues[k][1] === projectId) {
+      project.images.push({
+        imageId: imageValues[k][0], projectId: imageValues[k][1],
+        fileName: imageValues[k][2], driveUrl: imageValues[k][3],
+        driveFileId: imageValues[k][4], uploadedAt: imageValues[k][5]
+      });
+    }
+  }
 
   return project;
 }
 
 function createProject(body) {
-  const sheet = getSheet('Projects');
-  const now = new Date().toISOString();
-  const projectId = uuid('proj');
-  const quotedAmount = parseFloat(body.quotedAmount) || 0;
-  const depositPaid  = parseFloat(body.depositPaid)  || 0;
-  const balanceDue   = quotedAmount - depositPaid;
-
-  const row = [
+  var sheet = getSheet('Projects');
+  var now = new Date().toISOString();
+  var projectId = makeUuid('proj');
+  var quotedAmount = parseFloat(body.quotedAmount) || 0;
+  var depositPaid  = parseFloat(body.depositPaid)  || 0;
+  var row = [
     projectId,
-    body.stage || 'Lead / Inquiry',
+    body.stage        || 'Lead / Inquiry',
     body.customerName || '',
     body.projectTitle || '',
-    body.phone || '',
-    body.email || '',
-    body.projectType || '',
-    body.description || '',
-    body.notes || '',
+    body.phone        || '',
+    body.email        || '',
+    body.projectType  || '',
+    body.description  || '',
+    body.notes        || '',
     quotedAmount,
     depositPaid,
-    balanceDue,
+    quotedAmount - depositPaid,
     body.dateReceived || '',
-    body.startDate || '',
-    body.targetDate || '',
+    body.startDate    || '',
+    body.targetDate   || '',
     now,
-    body.assignee || '',
-    sheet.getLastRow(), // sortOrder
+    body.assignee     || '',
+    sheet.getLastRow()
   ];
   sheet.appendRow(row);
   return rowToProject(row);
 }
 
 function updateProject(body) {
-  const sheet = getSheet('Projects');
-  const values = sheet.getDataRange().getValues();
-  const header = values[0];
-
-  for (let i = 1; i < values.length; i++) {
+  var sheet = getSheet('Projects');
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
     if (values[i][0] === body.projectId) {
-      const rowNum = i + 1;
-      const updatable = [
+      var rowNum = i + 1;
+      var updatable = [
         'stage','customerName','projectTitle','phone','email',
         'projectType','description','notes',
         'quotedAmount','depositPaid','dateReceived',
         'startDate','targetDate','assignee','sortOrder'
       ];
-      updatable.forEach(key => {
+      for (var u = 0; u < updatable.length; u++) {
+        var key = updatable[u];
         if (body[key] !== undefined) {
-          const col = PROJECT_COLS.indexOf(key) + 1;
+          var col = PROJECT_COLS.indexOf(key) + 1;
           if (col > 0) sheet.getRange(rowNum, col).setValue(body[key]);
         }
-      });
-      // Recalculate balanceDue
-      const quotedAmount = parseFloat(body.quotedAmount !== undefined ? body.quotedAmount : values[i][9]) || 0;
-      const depositPaid  = parseFloat(body.depositPaid  !== undefined ? body.depositPaid  : values[i][10]) || 0;
-      sheet.getRange(rowNum, PROJECT_COLS.indexOf('balanceDue') + 1).setValue(quotedAmount - depositPaid);
-      // lastUpdated
+      }
+      var q = parseFloat(body.quotedAmount !== undefined ? body.quotedAmount : values[i][9]) || 0;
+      var d = parseFloat(body.depositPaid  !== undefined ? body.depositPaid  : values[i][10]) || 0;
+      sheet.getRange(rowNum, PROJECT_COLS.indexOf('balanceDue') + 1).setValue(q - d);
       sheet.getRange(rowNum, PROJECT_COLS.indexOf('lastUpdated') + 1).setValue(new Date().toISOString());
-
       return rowToProject(sheet.getRange(rowNum, 1, 1, PROJECT_COLS.length).getValues()[0]);
     }
   }
@@ -223,63 +223,50 @@ function updateProject(body) {
 }
 
 function deleteProject(projectId) {
-  // Delete project row
-  const sheet = getSheet('Projects');
-  const values = sheet.getDataRange().getValues();
-  for (let i = 1; i < values.length; i++) {
+  var sheet = getSheet('Projects');
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
     if (values[i][0] === projectId) { sheet.deleteRow(i + 1); break; }
   }
-
-  // Delete subtasks
-  const subtaskSheet = getSheet('Subtasks');
-  const subtaskValues = subtaskSheet.getDataRange().getValues();
-  for (let i = subtaskValues.length - 1; i >= 1; i--) {
-    if (subtaskValues[i][1] === projectId) subtaskSheet.deleteRow(i + 1);
+  var subtaskSheet = getSheet('Subtasks');
+  var subtaskValues = subtaskSheet.getDataRange().getValues();
+  for (var j = subtaskValues.length - 1; j >= 1; j--) {
+    if (subtaskValues[j][1] === projectId) subtaskSheet.deleteRow(j + 1);
   }
-
-  // Delete images from Drive + Sheets
-  const imageSheet = getSheet('Images');
-  const imageValues = imageSheet.getDataRange().getValues();
-  for (let i = imageValues.length - 1; i >= 1; i--) {
-    if (imageValues[i][1] === projectId) {
-      const fileId = imageValues[i][4];
-      try { DriveApp.getFileById(fileId).setTrashed(true); } catch(e) {}
-      imageSheet.deleteRow(i + 1);
+  var imageSheet = getSheet('Images');
+  var imageValues = imageSheet.getDataRange().getValues();
+  for (var k = imageValues.length - 1; k >= 1; k--) {
+    if (imageValues[k][1] === projectId) {
+      try { DriveApp.getFileById(imageValues[k][4]).setTrashed(true); } catch(e) {}
+      imageSheet.deleteRow(k + 1);
     }
   }
-
   return { deleted: true };
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// SUBTASKS
-// ════════════════════════════════════════════════════════════════════════════
+// --- SUBTASKS ---
 
 function createSubtask(body) {
-  const sheet = getSheet('Subtasks');
-  const now = new Date().toISOString();
-  const subtaskId = uuid('sub');
-  const row = [
-    subtaskId, body.projectId, body.title || '',
-    body.status || 'To Do', body.assignee || '',
-    body.dueDate || '', now, now
-  ];
+  var sheet = getSheet('Subtasks');
+  var now = new Date().toISOString();
+  var subtaskId = makeUuid('sub');
+  var row = [subtaskId, body.projectId, body.title || '', body.status || 'To Do', body.assignee || '', body.dueDate || '', now, now];
   sheet.appendRow(row);
-  return { subtaskId, projectId: body.projectId, title: body.title, status: body.status || 'To Do', assignee: body.assignee || '', dueDate: body.dueDate || '', createdAt: now, lastUpdated: now };
+  return { subtaskId: subtaskId, projectId: body.projectId, title: body.title, status: body.status || 'To Do', assignee: body.assignee || '', dueDate: body.dueDate || '', createdAt: now, lastUpdated: now };
 }
 
 function updateSubtask(body) {
-  const sheet = getSheet('Subtasks');
-  const values = sheet.getDataRange().getValues();
-  for (let i = 1; i < values.length; i++) {
+  var sheet = getSheet('Subtasks');
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
     if (values[i][0] === body.subtaskId) {
-      const rowNum = i + 1;
+      var rowNum = i + 1;
       if (body.title    !== undefined) sheet.getRange(rowNum, 3).setValue(body.title);
       if (body.status   !== undefined) sheet.getRange(rowNum, 4).setValue(body.status);
       if (body.assignee !== undefined) sheet.getRange(rowNum, 5).setValue(body.assignee);
       if (body.dueDate  !== undefined) sheet.getRange(rowNum, 6).setValue(body.dueDate);
       sheet.getRange(rowNum, 8).setValue(new Date().toISOString());
-      const updated = sheet.getRange(rowNum, 1, 1, 8).getValues()[0];
+      var updated = sheet.getRange(rowNum, 1, 1, 8).getValues()[0];
       return { subtaskId: updated[0], projectId: updated[1], title: updated[2], status: updated[3], assignee: updated[4], dueDate: updated[5], createdAt: updated[6], lastUpdated: updated[7] };
     }
   }
@@ -287,66 +274,47 @@ function updateSubtask(body) {
 }
 
 function deleteSubtask(subtaskId) {
-  const sheet = getSheet('Subtasks');
-  const values = sheet.getDataRange().getValues();
-  for (let i = 1; i < values.length; i++) {
+  var sheet = getSheet('Subtasks');
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
     if (values[i][0] === subtaskId) { sheet.deleteRow(i + 1); return { deleted: true }; }
   }
   throw new Error('Subtask not found: ' + subtaskId);
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// IMAGES
-// ════════════════════════════════════════════════════════════════════════════
+// --- IMAGES ---
 
 function uploadImage(body) {
-  const folderId = getConfig('driveFolderId');
+  var folderId = getConfig('driveFolderId');
   if (!folderId) throw new Error('driveFolderId not set in Config tab');
-
-  const parentFolder = DriveApp.getFolderById(folderId);
-
-  // Get or create project subfolder
-  let projectFolder;
-  const folders = parentFolder.getFoldersByName(body.projectId);
+  var parentFolder = DriveApp.getFolderById(folderId);
+  var projectFolder;
+  var folders = parentFolder.getFoldersByName(body.projectId);
   if (folders.hasNext()) {
     projectFolder = folders.next();
   } else {
     projectFolder = parentFolder.createFolder(body.projectId);
   }
-
-  // Timestamp the filename to avoid collisions
-  const ext = body.fileName.split('.').pop();
-  const baseName = body.fileName.replace(/\.[^.]+$/, '');
-  const timestampedName = `${baseName}_${Date.now()}.${ext}`;
-
-  // Decode base64 and create file
-  const blob = Utilities.newBlob(
-    Utilities.base64Decode(body.base64Data),
-    body.mimeType,
-    timestampedName
-  );
-  const file = projectFolder.createFile(blob);
+  var ext = body.fileName.split('.').pop();
+  var baseName = body.fileName.replace(/\.[^.]+$/, '');
+  var timestampedName = baseName + '_' + Date.now() + '.' + ext;
+  var blob = Utilities.newBlob(Utilities.base64Decode(body.base64Data), body.mimeType, timestampedName);
+  var file = projectFolder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-
-  const fileId = file.getId();
-  const driveUrl = `https://drive.google.com/file/d/${fileId}/view`;
-  const now = new Date().toISOString();
-  const imageId = uuid('img');
-
-  // Save to Images sheet
-  const sheet = getSheet('Images');
-  sheet.appendRow([imageId, body.projectId, timestampedName, driveUrl, fileId, now]);
-
-  return { imageId, projectId: body.projectId, fileName: timestampedName, driveUrl, driveFileId: fileId, uploadedAt: now };
+  var fileId = file.getId();
+  var driveUrl = 'https://drive.google.com/file/d/' + fileId + '/view';
+  var now = new Date().toISOString();
+  var imageId = makeUuid('img');
+  getSheet('Images').appendRow([imageId, body.projectId, timestampedName, driveUrl, fileId, now]);
+  return { imageId: imageId, projectId: body.projectId, fileName: timestampedName, driveUrl: driveUrl, driveFileId: fileId, uploadedAt: now };
 }
 
-function deleteImageAction(imageId) {
-  const sheet = getSheet('Images');
-  const values = sheet.getDataRange().getValues();
-  for (let i = 1; i < values.length; i++) {
+function deleteImageRecord(imageId) {
+  var sheet = getSheet('Images');
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
     if (values[i][0] === imageId) {
-      const fileId = values[i][4];
-      try { DriveApp.getFileById(fileId).setTrashed(true); } catch(e) {}
+      try { DriveApp.getFileById(values[i][4]).setTrashed(true); } catch(e) {}
       sheet.deleteRow(i + 1);
       return { deleted: true };
     }
