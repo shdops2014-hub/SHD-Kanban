@@ -7,7 +7,8 @@ import { STAGE_COLORS } from '../../utils/constants'
 const SKELETON_COUNTS = {
   'Lead / Inquiry': 2,
   'Proposal / Quote': 1,
-  'Active / In Progress': 2,
+  'Deposit Received': 1,
+  'Work in Progress': 2,
   'Completed / Archived': 1,
 }
 

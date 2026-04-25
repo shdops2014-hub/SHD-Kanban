@@ -18,6 +18,11 @@ export default function KanbanCard({ project, onClick }) {
   const subtaskCount = project.subtaskCount || 0
   const imageCount = project.imageCount || 0
 
+  const depositOverdue =
+    project.stage === 'Deposit Received' &&
+    project.lastUpdated &&
+    (Date.now() - new Date(project.lastUpdated).getTime()) / 86400000 >= 10
+
   return (
     <div
       ref={setNodeRef}
@@ -37,6 +42,14 @@ export default function KanbanCard({ project, onClick }) {
 
       {/* Stage badge */}
       <Badge className={`${colors.badge} mb-3`}>{project.stage}</Badge>
+
+      {/* Overdue deposit warning */}
+      {depositOverdue && (
+        <div className="flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mb-3">
+          <span>⚠️</span>
+          <span>Update Required</span>
+        </div>
+      )}
 
       {/* Footer row */}
       <div className="flex items-center justify-between text-xs text-gray-400 mt-2">

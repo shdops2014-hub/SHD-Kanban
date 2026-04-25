@@ -8,12 +8,30 @@ import Select from '../ui/Select'
 import SubtaskList from './SubtaskList'
 import ImageGallery from './ImageGallery'
 import ConfirmDialog from '../ui/ConfirmDialog'
-import { STAGES, PROJECT_TYPES } from '../../utils/constants'
+import { STAGES, STAGE_ORDER, PROJECT_TYPES } from '../../utils/constants'
 import { fetchProject } from '../../api/sheetsApi'
 import { formatCurrency } from '../../utils/formatters'
 import useStore from '../../store/useStore'
 
 const STAGE_OPTIONS = STAGES.map(s => ({ value: s, label: s }))
+
+// Advance stage based on financials — never moves backward
+function autoStage(data, currentStage) {
+  const current = STAGE_ORDER[currentStage] ?? 0
+  let target = current
+  if (parseFloat(data.quotedAmount) > 0) {
+    target = Math.max(target, STAGE_ORDER['Proposal / Quote'])
+  }
+  if (parseFloat(data.depositPaid) > 0) {
+    target = Math.max(target, STAGE_ORDER['Deposit Received'])
+  }
+  return STAGES[target]
+}
+
+function daysSince(dateStr) {
+  if (!dateStr) return 0
+  return (Date.now() - new Date(dateStr).getTime()) / 86400000
+}
 
 export default function ProjectModal({ projectId, open, onClose, defaultStage }) {
   const { addProject, editProject, removeProject, projects } = useStore()
@@ -88,15 +106,18 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
 
   const onSubmit = async (data) => {
     setSaving(true)
+    // Auto-advance stage based on financials (never moves backward)
+    const resolvedStage = autoStage(data, data.stage || STAGES[0])
+    const payload = { ...data, stage: resolvedStage }
+
     if (isNew) {
-      // Optimistic create: close immediately, sync in background
       onClose()
       toast.success('Project created!')
-      addProject(data).catch((e) => toast.error(e.message || 'Failed to save project'))
+      addProject(payload).catch((e) => toast.error(e.message || 'Failed to save project'))
       setSaving(false)
     } else {
       try {
-        await editProject(currentProjectId, data)
+        await editProject(currentProjectId, payload)
         toast.success('Project saved!')
         onClose()
       } catch (e) {
@@ -260,6 +281,14 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                       onSubtasksChange={setSubtasks}
                     />
                 }
+              </div>
+            )}
+
+            {/* Deposit overdue warning */}
+            {!isNew && watch('stage') === 'Deposit Received' && daysSince(projects.find(p => p.projectId === currentProjectId)?.lastUpdated) >= 10 && (
+              <div className="mt-4 flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800">
+                <span className="text-lg leading-none">⚠️</span>
+                <span>This project had a deposit received over 10 days ago. Please provide an update.</span>
               </div>
             )}
 
