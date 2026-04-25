@@ -238,15 +238,13 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   </div>
                 </div>
 
-                {/* Images */}
-                {!isNew && (
-                  detailsLoading
-                    ? <div className="text-xs text-gray-400 animate-pulse py-2">Loading images…</div>
-                    : <ImageGallery
-                        projectId={currentProjectId}
-                        images={images}
-                        onImagesChange={setImages}
-                      />
+                {/* Images — show immediately once we have a projectId */}
+                {!isNew && currentProjectId && (
+                  <ImageGallery
+                    projectId={currentProjectId}
+                    images={images}
+                    onImagesChange={setImages}
+                  />
                 )}
               </div>
             </div>
