@@ -32,6 +32,20 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
     setActiveCard(projects.find((p) => p.projectId === active.id) || null)
   }
 
+  const checkStageRestriction = (project, targetStage) => {
+    const hasDeposit = parseFloat(project.depositPaid) > 0
+    const hasQuote = parseFloat(project.quotedAmount) > 0
+    if (hasDeposit && (targetStage === 'Lead / Inquiry' || targetStage === 'Proposal / Quote')) {
+      toast.error(`Remove the deposit paid to move this project back to "${targetStage}"`)
+      return false
+    }
+    if (hasQuote && targetStage === 'Lead / Inquiry') {
+      toast.error(`Remove the quoted amount to move this project back to "Lead / Inquiry"`)
+      return false
+    }
+    return true
+  }
+
   const handleDragEnd = async ({ active, over }) => {
     setActiveCard(null)
     if (!over) return
@@ -42,6 +56,7 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
     // Dropped on a column (stage)
     if (STAGES.includes(over.id)) {
       if (draggedProject.stage !== over.id) {
+        if (!checkStageRestriction(draggedProject, over.id)) return
         try {
           await moveProject(draggedProject.projectId, over.id)
         } catch (e) {
@@ -54,6 +69,7 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
     // Dropped on another card — determine target stage
     const targetProject = projects.find((p) => p.projectId === over.id)
     if (targetProject && targetProject.stage !== draggedProject.stage) {
+      if (!checkStageRestriction(draggedProject, targetProject.stage)) return
       try {
         await moveProject(draggedProject.projectId, targetProject.stage)
       } catch (e) {

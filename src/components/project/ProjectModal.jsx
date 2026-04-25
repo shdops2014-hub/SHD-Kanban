@@ -39,7 +39,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
 
   const isNew = !projectId
 
-  const { register, handleSubmit, watch, reset, getValues, formState: { errors, isDirty } } = useForm()
+  const { register, handleSubmit, watch, reset, getValues, setValue, formState: { errors, isDirty } } = useForm()
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [subtasks, setSubtasks] = useState([])
@@ -236,7 +236,23 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 <Select
                   label="Stage"
                   options={STAGE_OPTIONS}
-                  {...register('stage')}
+                  {...register('stage', {
+                    onChange: (e) => {
+                      const targetStage = e.target.value
+                      const { quotedAmount, depositPaid } = getValues()
+                      const hasDeposit = parseFloat(depositPaid) > 0
+                      const hasQuote = parseFloat(quotedAmount) > 0
+                      if (hasDeposit && (targetStage === 'Lead / Inquiry' || targetStage === 'Proposal / Quote')) {
+                        toast.error(`Remove the deposit paid to move this project back to "${targetStage}"`)
+                        setValue('stage', 'Deposit Received', { shouldDirty: true })
+                        return
+                      }
+                      if (hasQuote && targetStage === 'Lead / Inquiry') {
+                        toast.error(`Remove the quoted amount to move this project back to "Lead / Inquiry"`)
+                        setValue('stage', 'Proposal / Quote', { shouldDirty: true })
+                      }
+                    },
+                  })}
                 />
 
                 <div>
