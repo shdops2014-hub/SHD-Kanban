@@ -72,7 +72,21 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   useEffect(() => {
     if (!open) return
     if (isNew) {
-      reset({ stage: defaultStage || STAGES[0] })
+      reset({
+        projectTitle: '',
+        customerName: '',
+        phone: '',
+        email: '',
+        projectType: '',
+        stage: defaultStage || STAGES[0],
+        description: '',
+        notes: '',
+        quotedAmount: '',
+        depositPaid: '',
+        dateReceived: '',
+        startDate: '',
+        targetDate: '',
+      })
       setSubtasks([])
       setImages([])
       setCurrentProjectId(null)
