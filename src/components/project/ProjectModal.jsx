@@ -8,6 +8,7 @@ import Select from '../ui/Select'
 import SubtaskList from './SubtaskList'
 import ImageGallery from './ImageGallery'
 import ConfirmDialog from '../ui/ConfirmDialog'
+import ProjectFormSkeleton from './ProjectFormSkeleton'
 import { STAGES, STAGE_ORDER, PROJECT_TYPES } from '../../utils/constants'
 import { fetchProject } from '../../api/sheetsApi'
 import { formatCurrency } from '../../utils/formatters'
@@ -43,6 +44,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const [saving, setSaving] = useState(false)
   const [subtasks, setSubtasks] = useState([])
   const [images, setImages] = useState([])
+  const [mediaChanged, setMediaChanged] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [currentProjectId, setCurrentProjectId] = useState(null)
 
@@ -102,6 +104,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
 
     // 2. Fetch full details in background for subtasks + images
     setDetailsLoading(true)
+    setMediaChanged(false)
     setSubtasks([])
     setImages([])
     fetchProject(projectId)
@@ -160,6 +163,10 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         wide
       >
         <form onSubmit={handleSubmit(onSubmit)}>
+            {/* Show skeleton until cache pre-fill has run for existing projects */}
+            {!isNew && !currentProjectId ? (
+              <ProjectFormSkeleton />
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left column */}
               <div className="flex flex-col gap-4">
@@ -278,11 +285,12 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   <ImageGallery
                     projectId={currentProjectId}
                     images={images}
-                    onImagesChange={setImages}
+                    onImagesChange={(imgs) => { setImages(imgs); setMediaChanged(true) }}
                   />
                 )}
               </div>
             </div>
+            )} {/* end skeleton conditional */}
 
             {/* Subtasks */}
             {!isNew && (
@@ -317,7 +325,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
               </div>
               <div className="flex gap-3">
                 <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                <Button type="submit" disabled={saving || (!isNew && !isDirty)}>
+                <Button type="submit" disabled={saving || (!isNew && !isDirty && !mediaChanged)}>
                   {saving ? 'Saving…' : isNew ? 'Create Project' : 'Save Changes'}
                 </Button>
               </div>
