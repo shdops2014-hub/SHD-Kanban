@@ -6,6 +6,9 @@ import KanbanBoard from '../components/board/KanbanBoard'
 import ProjectModal from '../components/project/ProjectModal'
 import Spinner from '../components/ui/Spinner'
 import useStore from '../store/useStore'
+import { ping } from '../api/sheetsApi'
+
+const WARM_INTERVAL_MS = 4 * 60 * 1000 // 4 minutes
 
 export default function BoardPage() {
   const { loadProjects, loading, error } = useStore()
@@ -15,7 +18,14 @@ export default function BoardPage() {
   const [activeProjectId, setActiveProjectId] = useState(null)
   const [defaultStage, setDefaultStage] = useState(null)
 
-  useEffect(() => { loadProjects() }, [])
+  useEffect(() => {
+    // Fire ping immediately to warm the Apps Script before user interacts
+    ping().catch(() => {})
+    loadProjects()
+    // Keep warm every 4 minutes to prevent cold starts
+    const interval = setInterval(() => ping().catch(() => {}), WARM_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [])
 
   const openNew = (stage = null) => {
     setActiveProjectId(null)
@@ -32,7 +42,6 @@ export default function BoardPage() {
   const closeModal = () => {
     setModalOpen(false)
     setActiveProjectId(null)
-    loadProjects() // refresh after any changes
   }
 
   return (

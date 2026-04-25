@@ -20,12 +20,46 @@ const useStore = create((set, get) => ({
 
   // ── Create ────────────────────────────────────────────────────────────────
   addProject: async (data) => {
-    const res = await api.createProject(data)
-    if (res.success) {
-      set((s) => ({ projects: [...s.projects, res.data] }))
-      return res.data
+    // Optimistic: add a placeholder card immediately so the modal can close
+    const tempId = '__temp_' + Date.now()
+    const tempProject = {
+      projectId: tempId,
+      stage: data.stage || 'Lead / Inquiry',
+      customerName: data.customerName || '',
+      projectTitle: data.projectTitle || '',
+      phone: data.phone || '',
+      email: data.email || '',
+      projectType: data.projectType || '',
+      description: data.description || '',
+      notes: data.notes || '',
+      quotedAmount: parseFloat(data.quotedAmount) || 0,
+      depositPaid: parseFloat(data.depositPaid) || 0,
+      balanceDue: (parseFloat(data.quotedAmount) || 0) - (parseFloat(data.depositPaid) || 0),
+      dateReceived: data.dateReceived || '',
+      startDate: data.startDate || '',
+      targetDate: data.targetDate || '',
+      assignee: data.assignee || '',
+      sortOrder: 0,
+      subtaskCount: 0,
+      imageCount: 0,
+      _optimistic: true,
     }
-    throw new Error(res.error)
+    set((s) => ({ projects: [...s.projects, tempProject] }))
+    try {
+      const res = await api.createProject(data)
+      if (res.success) {
+        // Replace temp card with real data
+        set((s) => ({
+          projects: s.projects.map((p) => p.projectId === tempId ? { ...res.data, subtaskCount: 0, imageCount: 0 } : p),
+        }))
+        return res.data
+      }
+      throw new Error(res.error)
+    } catch (e) {
+      // Remove temp card on failure
+      set((s) => ({ projects: s.projects.filter((p) => p.projectId !== tempId) }))
+      throw e
+    }
   },
 
   // ── Update ────────────────────────────────────────────────────────────────

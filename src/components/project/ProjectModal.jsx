@@ -73,19 +73,22 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
 
   const onSubmit = async (data) => {
     setSaving(true)
-    try {
-      if (isNew) {
-        await addProject(data)
-        toast.success('Project created!')
-      } else {
+    if (isNew) {
+      // Optimistic create: close immediately, sync in background
+      onClose()
+      toast.success('Project created!')
+      addProject(data).catch((e) => toast.error(e.message || 'Failed to save project'))
+      setSaving(false)
+    } else {
+      try {
         await editProject(currentProjectId, data)
         toast.success('Project saved!')
+        onClose()
+      } catch (e) {
+        toast.error(e.message || 'Save failed')
       }
-      onClose()
-    } catch (e) {
-      toast.error(e.message || 'Save failed')
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   const handleDelete = async () => {
