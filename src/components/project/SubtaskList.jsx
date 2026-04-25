@@ -82,6 +82,7 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
               {SUBTASK_STATUSES.map(st => <option key={st}>{st}</option>)}
             </select>
             <button
+              type="button"
               onClick={() => handleDelete(s.subtaskId)}
               className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm"
             >

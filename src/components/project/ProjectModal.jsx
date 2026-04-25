@@ -162,7 +162,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         title={isNew ? 'New Project' : 'Project Details'}
         wide
       >
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={(e) => e.preventDefault()}>
             {/* Show skeleton until cache pre-fill has run for existing projects */}
             {!isNew && !currentProjectId ? (
               <ProjectFormSkeleton />
@@ -339,7 +339,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
               </div>
               <div className="flex gap-3">
                 <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                <Button type="submit" disabled={saving || (!isNew && !isDirty && !mediaChanged)}>
+                <Button onClick={handleSubmit(onSubmit)} disabled={saving || (!isNew && !isDirty && !mediaChanged)}>
                   {saving ? 'Saving…' : isNew ? 'Create Project' : 'Save Changes'}
                 </Button>
               </div>
