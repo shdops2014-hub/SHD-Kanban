@@ -149,7 +149,22 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                     placeholder="(555) 000-0000"
                     error={errors.phone?.message}
                     {...register('phone', {
-                      validate: v => v?.trim() || getValues('email')?.trim() ? true : 'Phone or email is required'
+                      validate: v => {
+                        const hasEmail = getValues('email')?.trim()
+                        if (!v?.trim() && !hasEmail) return 'Phone or email is required'
+                        if (!v?.trim()) return true
+                        const digits = v.replace(/\D/g, '')
+                        if (digits.length !== 10) return 'Phone must be 10 digits'
+                        return true
+                      },
+                      onChange: (e) => {
+                        // Strip non-numeric characters as user types
+                        const digits = e.target.value.replace(/\D/g, '').slice(0, 10)
+                        e.target.value = digits.length === 0 ? '' :
+                          digits.length <= 3 ? `(${digits}` :
+                          digits.length <= 6 ? `(${digits.slice(0,3)}) ${digits.slice(3)}` :
+                          `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`
+                      }
                     })}
                   />
                   <Input
@@ -158,7 +173,14 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                     placeholder="email@example.com"
                     error={errors.email?.message}
                     {...register('email', {
-                      validate: v => v?.trim() || getValues('phone')?.trim() ? true : 'Phone or email is required'
+                      validate: v => {
+                        const hasPhone = getValues('phone')?.trim()
+                        if (!v?.trim() && !hasPhone) return 'Phone or email is required'
+                        if (!v?.trim()) return true
+                        const valid = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|gov|io|co|biz|info)$/i.test(v.trim())
+                        if (!valid) return 'Enter a valid email address'
+                        return true
+                      }
                     })}
                   />
                 </div>
