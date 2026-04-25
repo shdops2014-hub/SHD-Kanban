@@ -281,27 +281,31 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 </div>
 
                 {/* Images */}
-                {!isNew && currentProjectId && (
-                  detailsLoading ? (
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
-                        <div className="h-4 bg-gray-200 rounded w-14 animate-pulse" />
+                {!isNew && currentProjectId && (() => {
+                  const cachedCount = projects.find(p => p.projectId === currentProjectId)?.imageCount ?? 0
+                  // Only show skeleton if we know images exist — otherwise go straight to empty upload state
+                  if (detailsLoading && cachedCount > 0) {
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-semibold text-sm text-shd-dark">Images <span className="text-gray-400 font-normal">({cachedCount})</span></h3>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {Array.from({ length: Math.min(cachedCount, 6) }).map((_, i) => (
+                            <div key={i} className="aspect-square rounded-lg bg-gray-100 animate-pulse" />
+                          ))}
+                        </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[0,1,2].map(i => (
-                          <div key={i} className="aspect-square rounded-lg bg-gray-100 animate-pulse" />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
+                    )
+                  }
+                  return (
                     <ImageGallery
                       projectId={currentProjectId}
                       images={images}
                       onImagesChange={(imgs) => { setImages(imgs); setMediaChanged(true) }}
                     />
                   )
-                )}
+                })()}
               </div>
             </div>
             )} {/* end skeleton conditional */}
