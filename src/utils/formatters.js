@@ -11,6 +11,15 @@ export const formatDate = (val) => {
   return dayjs(val).format('MMM D, YYYY')
 }
 
+// Normalize any date value to YYYY-MM-DD for use in <input type="date">.
+// Handles ISO strings ("2026-04-25T00:00:00.000Z"), plain strings, and Date objects.
+export const toDateValue = (val) => {
+  if (!val) return ''
+  const s = String(val)
+  const match = s.match(/^(\d{4}-\d{2}-\d{2})/)
+  return match ? match[1] : ''
+}
+
 export const formatPhone = (val) => {
   if (!val) return '—'
   const digits = val.replace(/\D/g, '')

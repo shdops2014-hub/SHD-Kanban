@@ -12,7 +12,7 @@ import InactiveConfirmDialog from './InactiveConfirmDialog'
 import ProjectFormSkeleton from './ProjectFormSkeleton'
 import { STAGES, STAGE_ORDER, PROJECT_TYPES } from '../../utils/constants'
 import { fetchProject, createSubtask as createSubtaskApi, updateSubtask as updateSubtaskApi, deleteSubtask as deleteSubtaskApi } from '../../api/sheetsApi'
-import { formatCurrency } from '../../utils/formatters'
+import { formatCurrency, toDateValue } from '../../utils/formatters'
 import useStore from '../../store/useStore'
 
 const STAGE_OPTIONS = STAGES.map(s => ({ value: s, label: s }))
@@ -76,9 +76,9 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       depositPaid: p.depositPaid || '',
       invoiced: p.invoiced === true || p.invoiced === 'TRUE' || false,
       invoiceAmount: p.invoiceAmount || '',
-      dateReceived: p.dateReceived || '',
-      startDate: p.startDate || '',
-      targetDate: p.targetDate || '',
+      dateReceived: toDateValue(p.dateReceived),
+      startDate: toDateValue(p.startDate),
+      targetDate: toDateValue(p.targetDate),
     })
   }
 

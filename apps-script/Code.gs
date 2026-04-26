@@ -86,6 +86,20 @@ var PROJECT_COLS = [
   'closingNotes'
 ];
 
+// Format a cell value that may be a Date object into a YYYY-MM-DD string.
+// input type="date" requires exactly this format; ISO strings with time components are rejected.
+function formatDateCell(val) {
+  if (!val) return '';
+  if (val instanceof Date) {
+    var y = val.getFullYear();
+    var m = ('0' + (val.getMonth() + 1)).slice(-2);
+    var d = ('0' + val.getDate()).slice(-2);
+    return y + '-' + m + '-' + d;
+  }
+  // Already a string — strip any trailing time component just in case
+  return String(val).split('T')[0];
+}
+
 function rowToProject(row) {
   var obj = {};
   for (var i = 0; i < PROJECT_COLS.length; i++) {
@@ -97,6 +111,11 @@ function rowToProject(row) {
   obj.sortOrder     = parseInt(obj.sortOrder)        || 0;
   obj.invoiced      = obj.invoiced === true || obj.invoiced === 'TRUE';
   obj.invoiceAmount = parseFloat(obj.invoiceAmount) || 0;
+  // Ensure date fields are always YYYY-MM-DD strings, never raw Date objects
+  obj.dateReceived  = formatDateCell(obj.dateReceived);
+  obj.startDate     = formatDateCell(obj.startDate);
+  obj.targetDate    = formatDateCell(obj.targetDate);
+  obj.lastUpdated   = obj.lastUpdated ? String(obj.lastUpdated) : '';
   return obj;
 }
 
