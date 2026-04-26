@@ -1,48 +1,29 @@
 import { useState } from 'react'
-import toast from 'react-hot-toast'
 import { SUBTASK_STATUSES } from '../../utils/constants'
-import { createSubtask, updateSubtask, deleteSubtask } from '../../api/sheetsApi'
 import Button from '../ui/Button'
 
 export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
-  const [saving, setSaving] = useState(false)
 
-  const handleAdd = async () => {
+  const handleAdd = () => {
     if (!newTitle.trim()) return
-    setSaving(true)
-    try {
-      const res = await createSubtask({ projectId, title: newTitle.trim(), status: 'To Do' })
-      if (res.success) {
-        onSubtasksChange([...subtasks, res.data])
-        setNewTitle('')
-        setAdding(false)
-        toast.success('Subtask added')
-      }
-    } catch { toast.error('Failed to add subtask') }
-    setSaving(false)
+    onSubtasksChange([...subtasks, {
+      subtaskId: '__temp_' + Date.now(),
+      projectId,
+      title: newTitle.trim(),
+      status: 'To Do',
+    }])
+    setNewTitle('')
+    setAdding(false)
   }
 
-  const handleStatusChange = async (subtaskId, status) => {
-    // Optimistic update
-    const prev = subtasks
+  const handleStatusChange = (subtaskId, status) => {
     onSubtasksChange(subtasks.map(s => s.subtaskId === subtaskId ? { ...s, status } : s))
-    try {
-      const res = await updateSubtask(subtaskId, { status })
-      if (!res.success) throw new Error(res.error)
-    } catch {
-      onSubtasksChange(prev)
-      toast.error('Failed to update subtask')
-    }
   }
 
-  const handleDelete = async (subtaskId) => {
-    try {
-      await deleteSubtask(subtaskId)
-      onSubtasksChange(subtasks.filter(s => s.subtaskId !== subtaskId))
-      toast.success('Subtask removed')
-    } catch { toast.error('Failed to delete subtask') }
+  const handleDelete = (subtaskId) => {
+    onSubtasksChange(subtasks.filter(s => s.subtaskId !== subtaskId))
   }
 
   const done = subtasks.filter(s => s.status === 'Done').length
@@ -73,33 +54,40 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
       )}
 
       <div className="flex flex-col gap-2">
-        {subtasks.map((s) => (
-          <div key={s.subtaskId} className={`flex items-center gap-3 py-2 px-3 rounded-lg group transition-colors ${STATUS_STYLES[s.status] || 'bg-gray-50'}`}>
-            <input
-              type="checkbox"
-              checked={s.status === 'Done'}
-              onChange={(e) => handleStatusChange(s.subtaskId, e.target.checked ? 'Done' : 'To Do')}
-              className="accent-shd-brown w-4 h-4 flex-shrink-0"
-            />
-            <span className={`flex-1 text-sm ${s.status === 'Done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-              {s.title}
-            </span>
-            <select
-              value={s.status}
-              onChange={(e) => handleStatusChange(s.subtaskId, e.target.value)}
-              className="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white"
+        {subtasks.map((s) => {
+          const isNew = s.subtaskId.startsWith('__temp_')
+          return (
+            <div
+              key={s.subtaskId}
+              className={`flex items-center gap-3 py-2 px-3 rounded-lg group transition-colors ${STATUS_STYLES[s.status] || 'bg-gray-50'} ${isNew ? 'ring-1 ring-shd-brown/30' : ''}`}
             >
-              {SUBTASK_STATUSES.map(st => <option key={st}>{st}</option>)}
-            </select>
-            <button
-              type="button"
-              onClick={() => handleDelete(s.subtaskId)}
-              className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
+              <input
+                type="checkbox"
+                checked={s.status === 'Done'}
+                onChange={(e) => handleStatusChange(s.subtaskId, e.target.checked ? 'Done' : 'To Do')}
+                className="accent-shd-brown w-4 h-4 flex-shrink-0"
+              />
+              <span className={`flex-1 text-sm ${s.status === 'Done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                {s.title}
+                {isNew && <span className="ml-1.5 text-xs text-shd-brown font-medium">unsaved</span>}
+              </span>
+              <select
+                value={s.status}
+                onChange={(e) => handleStatusChange(s.subtaskId, e.target.value)}
+                className="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white"
+              >
+                {SUBTASK_STATUSES.map(st => <option key={st}>{st}</option>)}
+              </select>
+              <button
+                type="button"
+                onClick={() => handleDelete(s.subtaskId)}
+                className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm"
+              >
+                ✕
+              </button>
+            </div>
+          )
+        })}
 
         {adding && (
           <div className="flex items-center gap-2 mt-1">
@@ -107,11 +95,14 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
               autoFocus
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd() } if (e.key === 'Escape') setAdding(false) }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); handleAdd() }
+                if (e.key === 'Escape') setAdding(false)
+              }}
               placeholder="Subtask title..."
               className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-shd-brown"
             />
-            <Button size="sm" onClick={handleAdd} disabled={saving}>Add</Button>
+            <Button size="sm" onClick={handleAdd}>Add</Button>
             <Button size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
           </div>
         )}

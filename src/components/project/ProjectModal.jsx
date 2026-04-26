@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import Modal from '../ui/Modal'
@@ -10,7 +10,7 @@ import ImageGallery from './ImageGallery'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import ProjectFormSkeleton from './ProjectFormSkeleton'
 import { STAGES, STAGE_ORDER, PROJECT_TYPES } from '../../utils/constants'
-import { fetchProject } from '../../api/sheetsApi'
+import { fetchProject, createSubtask as createSubtaskApi, updateSubtask as updateSubtaskApi, deleteSubtask as deleteSubtaskApi } from '../../api/sheetsApi'
 import { formatCurrency } from '../../utils/formatters'
 import useStore from '../../store/useStore'
 
@@ -47,6 +47,8 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const [mediaChanged, setMediaChanged] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [currentProjectId, setCurrentProjectId] = useState(null)
+  // Tracks the DB state of subtasks at open time so we can diff on save
+  const originalSubtasksRef = useRef([])
 
   const quotedAmount = parseFloat(watch('quotedAmount')) || 0
   const depositPaid = parseFloat(watch('depositPaid')) || 0
@@ -115,6 +117,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       setSubtasks(cachedDetail.subtasks || [])
       setImages(cachedDetail.images || [])
       setCurrentProjectId(cachedDetail.projectId)
+      originalSubtasksRef.current = cachedDetail.subtasks || []
     }
 
     setMediaChanged(false)
@@ -125,15 +128,22 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       setDetailsLoading(true)
       setSubtasks([])
       setImages([])
+      originalSubtasksRef.current = []
     }
 
     fetchProject(projectId)
       .then(res => {
         if (res.success) {
           const p = res.data
-          resetFormFromProject(p)
-          setSubtasks(p.subtasks || [])
-          setImages(p.images || [])
+          // Always update the original ref with fresh DB state for diffing on save.
+          // Only update displayed data when there was no cache — with a cache the
+          // user may have already started editing and we must not override their changes.
+          originalSubtasksRef.current = p.subtasks || []
+          if (!cachedDetail) {
+            resetFormFromProject(p)
+            setSubtasks(p.subtasks || [])
+            setImages(p.images || [])
+          }
           setCurrentProjectId(p.projectId)
           cacheProjectDetails(projectId, p)
         }
@@ -156,6 +166,26 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
     } else {
       try {
         await editProject(currentProjectId, payload)
+
+        // Diff local subtask state against DB snapshot and flush pending changes
+        const originals = originalSubtasksRef.current
+        const toCreate = subtasks.filter(s => s.subtaskId.startsWith('__temp_'))
+        const toDelete = originals.filter(o => !subtasks.find(s => s.subtaskId === o.subtaskId))
+        const toUpdate = subtasks.filter(s => {
+          if (s.subtaskId.startsWith('__temp_')) return false
+          const orig = originals.find(o => o.subtaskId === s.subtaskId)
+          return orig && orig.status !== s.status
+        })
+
+        if (toCreate.length || toDelete.length || toUpdate.length) {
+          await Promise.all([
+            ...toCreate.map(s => createSubtaskApi({ projectId: currentProjectId, title: s.title, status: s.status })),
+            ...toDelete.map(s => deleteSubtaskApi(s.subtaskId)),
+            ...toUpdate.map(s => updateSubtaskApi(s.subtaskId, { status: s.status })),
+          ])
+          patchProject(currentProjectId, { subtaskCount: subtasks.length })
+        }
+
         toast.success('Project saved!')
         onClose()
       } catch (e) {
@@ -390,7 +420,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   : <SubtaskList
                       projectId={currentProjectId}
                       subtasks={subtasks}
-                      onSubtasksChange={setSubtasks}
+                      onSubtasksChange={(updated) => { setSubtasks(updated); setMediaChanged(true) }}
                     />
                 }
               </div>
