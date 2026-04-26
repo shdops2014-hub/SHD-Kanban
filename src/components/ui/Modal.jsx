@@ -11,7 +11,7 @@ export default function Modal({ open, onClose, title, children, wide = false }) 
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/40 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/40 overflow-y-auto" onClick={onClose}>
       <div
         className={`relative bg-white rounded-2xl shadow-xl w-full ${wide ? 'max-w-4xl' : 'max-w-lg'} mx-auto`}
         onClick={(e) => e.stopPropagation()}

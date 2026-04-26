@@ -115,6 +115,17 @@ const useStore = create((set, get) => ({
     }
   },
 
+  // ── Local patch (no API call) ─────────────────────────────────────────────
+  // Used to keep board card counts in sync after image/subtask changes
+  // that are saved directly via their own API calls (not through editProject).
+  patchProject: (projectId, fields) => {
+    set((s) => ({
+      projects: s.projects.map((p) =>
+        p.projectId === projectId ? { ...p, ...fields } : p
+      ),
+    }))
+  },
+
   // ── Detail cache ──────────────────────────────────────────────────────────
   // Stores full project data (including subtasks + images) keyed by projectId.
   // Used to show content instantly on modal open while a background refresh runs.

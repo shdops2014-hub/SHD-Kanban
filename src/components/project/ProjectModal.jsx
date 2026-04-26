@@ -35,7 +35,7 @@ function daysSince(dateStr) {
 }
 
 export default function ProjectModal({ projectId, open, onClose, defaultStage }) {
-  const { addProject, editProject, removeProject, projects, projectCache, cacheProjectDetails } = useStore()
+  const { addProject, editProject, removeProject, projects, projectCache, cacheProjectDetails, patchProject } = useStore()
 
   const isNew = !projectId
 
@@ -235,7 +235,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                         const hasPhone = getValues('phone')?.trim()
                         if (!v?.trim() && !hasPhone) return 'Phone or email is required'
                         if (!v?.trim()) return true
-                        const valid = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|gov|io|co|biz|info)$/i.test(v.trim())
+                        const valid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(v.trim())
                         if (!valid) return 'Enter a valid email address'
                         return true
                       }
@@ -306,8 +306,8 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   <Input label="Deposit Paid ($)" type="number" step="0.01" placeholder="0.00" {...register('depositPaid')} />
                   <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                     <span className="text-sm font-medium text-gray-600">Balance Due</span>
-                    <span className={`text-sm font-semibold ${balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {formatCurrency(balanceDue)}
+                    <span className={`text-sm font-semibold ${quotedAmount === 0 && depositPaid === 0 ? 'text-gray-400' : balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {quotedAmount === 0 && depositPaid === 0 ? '—' : formatCurrency(balanceDue)}
                     </span>
                   </div>
                 </div>
@@ -334,7 +334,11 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                     <ImageGallery
                       projectId={currentProjectId}
                       images={images}
-                      onImagesChange={(imgs) => { setImages(imgs); setMediaChanged(true) }}
+                      onImagesChange={(imgs) => {
+                        setImages(imgs)
+                        setMediaChanged(true)
+                        patchProject(currentProjectId, { imageCount: imgs.length })
+                      }}
                     />
                   )
                 })()}
