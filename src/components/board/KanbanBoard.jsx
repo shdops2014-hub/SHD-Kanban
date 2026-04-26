@@ -4,7 +4,7 @@ import { arrayMove } from '@dnd-kit/sortable'
 import toast from 'react-hot-toast'
 import KanbanColumn from './KanbanColumn'
 import KanbanCard from './KanbanCard'
-import { STAGES } from '../../utils/constants'
+import { STAGES, BOARD_STAGES } from '../../utils/constants'
 import useStore from '../../store/useStore'
 
 export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeFilter, loading }) {
@@ -86,7 +86,7 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-5 overflow-x-auto pb-6">
-        {STAGES.map((stage) => (
+        {BOARD_STAGES.map((stage) => (
           <KanbanColumn
             key={stage}
             stage={stage}

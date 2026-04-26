@@ -8,6 +8,7 @@ import Select from '../ui/Select'
 import SubtaskList from './SubtaskList'
 import ImageGallery from './ImageGallery'
 import ConfirmDialog from '../ui/ConfirmDialog'
+import InactiveConfirmDialog from './InactiveConfirmDialog'
 import ProjectFormSkeleton from './ProjectFormSkeleton'
 import { STAGES, STAGE_ORDER, PROJECT_TYPES } from '../../utils/constants'
 import { fetchProject, createSubtask as createSubtaskApi, updateSubtask as updateSubtaskApi, deleteSubtask as deleteSubtaskApi } from '../../api/sheetsApi'
@@ -46,9 +47,12 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const [images, setImages] = useState([])
   const [mediaChanged, setMediaChanged] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [inactiveConfirmOpen, setInactiveConfirmOpen] = useState(false)
   const [currentProjectId, setCurrentProjectId] = useState(null)
   // Tracks the DB state of subtasks at open time so we can diff on save
   const originalSubtasksRef = useRef([])
+  // Tracks the last confirmed stage so we can revert the dropdown on cancel
+  const committedStageRef = useRef(STAGES[0])
 
   const quotedAmount = parseFloat(watch('quotedAmount')) || 0
   const depositPaid = parseFloat(watch('depositPaid')) || 0
@@ -56,15 +60,18 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const invoiced = watch('invoiced')
 
   const resetFormFromProject = (p) => {
+    const stage = p.stage || STAGES[0]
+    committedStageRef.current = stage
     reset({
       projectTitle: p.projectTitle || '',
       customerName: p.customerName || '',
       phone: p.phone || '',
       email: p.email || '',
       projectType: p.projectType || '',
-      stage: p.stage || STAGES[0],
+      stage,
       description: p.description || '',
       notes: p.notes || '',
+      closingNotes: p.closingNotes || '',
       quotedAmount: p.quotedAmount || '',
       depositPaid: p.depositPaid || '',
       invoiced: p.invoiced === true || p.invoiced === 'TRUE' || false,
@@ -79,6 +86,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   useEffect(() => {
     if (!open) return
     if (isNew) {
+      committedStageRef.current = defaultStage || STAGES[0]
       reset({
         projectTitle: '',
         customerName: '',
@@ -88,6 +96,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         stage: defaultStage || STAGES[0],
         description: '',
         notes: '',
+        closingNotes: '',
         quotedAmount: '',
         depositPaid: '',
         invoiced: false,
@@ -195,6 +204,13 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
     }
   }
 
+  const handleInactiveConfirm = (closingNotes) => {
+    committedStageRef.current = 'Inactive / Lost'
+    setValue('stage', 'Inactive / Lost', { shouldDirty: true })
+    setValue('closingNotes', closingNotes, { shouldDirty: true })
+    setInactiveConfirmOpen(false)
+  }
+
   const handleDelete = async () => {
     try {
       await removeProject(currentProjectId)
@@ -293,6 +309,15 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                       const { quotedAmount, depositPaid } = getValues()
                       const hasDeposit = parseFloat(depositPaid) > 0
                       const hasQuote = parseFloat(quotedAmount) > 0
+
+                      // Inactive / Lost requires confirmation + closing notes
+                      if (targetStage === 'Inactive / Lost') {
+                        setValue('stage', committedStageRef.current, { shouldDirty: true })
+                        setInactiveConfirmOpen(true)
+                        return
+                      }
+
+                      // Financial stage restrictions
                       if (hasDeposit && (targetStage === 'Lead / Inquiry' || targetStage === 'Proposal / Quote')) {
                         toast.error(`Remove the deposit paid to move this project back to "${targetStage}"`)
                         setValue('stage', 'Deposit Received', { shouldDirty: true })
@@ -301,7 +326,10 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                       if (hasQuote && targetStage === 'Lead / Inquiry') {
                         toast.error(`Remove the quoted amount to move this project back to "Lead / Inquiry"`)
                         setValue('stage', 'Proposal / Quote', { shouldDirty: true })
+                        return
                       }
+
+                      committedStageRef.current = targetStage
                     },
                   })}
                 />
@@ -325,6 +353,18 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                     {...register('notes')}
                   />
                 </div>
+
+                {watch('stage') === 'Inactive / Lost' && (
+                  <div>
+                    <label className="text-sm font-medium text-red-600 block mb-1">Closing Notes</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Reason for closing this project..."
+                      className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none bg-red-50"
+                      {...register('closingNotes')}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Right column */}
@@ -459,6 +499,12 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         onConfirm={handleDelete}
         title="Delete Project"
         message="This will permanently delete the project, all subtasks, and all attached images. This cannot be undone."
+      />
+
+      <InactiveConfirmDialog
+        open={inactiveConfirmOpen}
+        onClose={() => setInactiveConfirmOpen(false)}
+        onConfirm={handleInactiveConfirm}
       />
     </>
   )

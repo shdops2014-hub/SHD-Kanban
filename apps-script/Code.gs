@@ -82,7 +82,8 @@ var PROJECT_COLS = [
   'quotedAmount','depositPaid','balanceDue',
   'dateReceived','startDate','targetDate','lastUpdated',
   'assignee','sortOrder',
-  'invoiced','invoiceAmount'
+  'invoiced','invoiceAmount',
+  'closingNotes'
 ];
 
 function rowToProject(row) {
@@ -192,7 +193,8 @@ function createProject(body) {
     body.assignee      || '',
     sheet.getLastRow(),
     body.invoiced      ? true : false,
-    parseFloat(body.invoiceAmount) || 0
+    parseFloat(body.invoiceAmount) || 0,
+    body.closingNotes  || ''
   ];
   sheet.appendRow(row);
   return rowToProject(row);
@@ -209,7 +211,8 @@ function updateProject(body) {
         'projectType','description','notes',
         'quotedAmount','depositPaid','dateReceived',
         'startDate','targetDate','assignee','sortOrder',
-        'invoiced','invoiceAmount'
+        'invoiced','invoiceAmount',
+        'closingNotes'
       ];
       for (var u = 0; u < updatable.length; u++) {
         var key = updatable[u];

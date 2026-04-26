@@ -5,10 +5,10 @@ import KanbanCardSkeleton from './KanbanCardSkeleton'
 import { STAGE_COLORS } from '../../utils/constants'
 
 const SKELETON_COUNTS = {
-  'Lead / Inquiry': 2,
-  'Proposal / Quote': 1,
-  'Deposit Received': 1,
-  'Work in Progress': 2,
+  'Lead / Inquiry':       2,
+  'Proposal / Quote':     1,
+  'Deposit Received':     1,
+  'Work in Progress':     2,
   'Completed / Archived': 1,
 }
 

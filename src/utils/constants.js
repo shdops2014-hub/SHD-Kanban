@@ -4,7 +4,11 @@ export const STAGES = [
   'Deposit Received',
   'Work in Progress',
   'Completed / Archived',
+  'Inactive / Lost',
 ]
+
+// Stages rendered as board columns — Inactive / Lost is hidden from the board
+export const BOARD_STAGES = STAGES.filter(s => s !== 'Inactive / Lost')
 
 // Index-based ordering for auto-stage advancement
 export const STAGE_ORDER = Object.fromEntries(STAGES.map((s, i) => [s, i]))
@@ -15,6 +19,7 @@ export const STAGE_COLORS = {
   'Deposit Received':     { bg: 'bg-violet-50', border: 'border-violet-200', badge: 'bg-violet-100 text-violet-700' },
   'Work in Progress':     { bg: 'bg-green-50',  border: 'border-green-200',  badge: 'bg-green-100 text-green-700' },
   'Completed / Archived': { bg: 'bg-blue-50',   border: 'border-blue-200',   badge: 'bg-blue-100 text-blue-700' },
+  'Inactive / Lost':      { bg: 'bg-red-50',    border: 'border-red-200',    badge: 'bg-red-100 text-red-600' },
 }
 
 export const PROJECT_TYPES = [
