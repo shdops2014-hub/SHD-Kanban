@@ -55,16 +55,22 @@ export default function KanbanCard({ project, onClick }) {
       )}
 
       {/* Footer row */}
-      <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
-        <span>{project.dateReceived ? formatDate(project.dateReceived) : 'No date'}</span>
-        <div className="flex items-center gap-2">
-          {subtaskCount > 0 && (
-            <span title="Subtasks">✓ {subtaskCount}</span>
-          )}
-          {imageCount > 0 && (
-            <span title="Images">🖼 {imageCount}</span>
-          )}
-        </div>
+      <div className="flex items-center justify-between text-xs text-gray-400 mt-2 pt-2 border-t border-gray-100">
+        <span className="truncate mr-2">{project.dateReceived ? formatDate(project.dateReceived) : 'No date'}</span>
+        {(subtaskCount > 0 || imageCount > 0) && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {subtaskCount > 0 && (
+              <span title={`${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`} className="flex items-center gap-0.5">
+                <span>✓</span><span>{subtaskCount}</span>
+              </span>
+            )}
+            {imageCount > 0 && (
+              <span title={`${imageCount} image${imageCount !== 1 ? 's' : ''}`} className="flex items-center gap-0.5">
+                <span>🖼</span><span>{imageCount}</span>
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
