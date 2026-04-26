@@ -11,7 +11,8 @@ export default function Modal({ open, onClose, title, children, wide = false }) 
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/40 overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40" onClick={onClose}>
+      <div className="flex min-h-full items-center justify-center p-4 py-8">
       <div
         className={`relative bg-white rounded-2xl shadow-xl w-full ${wide ? 'max-w-4xl' : 'max-w-lg'} mx-auto`}
         onClick={(e) => e.stopPropagation()}
@@ -21,6 +22,7 @@ export default function Modal({ open, onClose, title, children, wide = false }) 
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
         <div className="px-6 py-5">{children}</div>
+      </div>
       </div>
     </div>
   )

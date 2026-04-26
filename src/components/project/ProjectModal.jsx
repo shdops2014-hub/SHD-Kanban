@@ -359,7 +359,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                     <label className="text-sm font-medium text-red-600 block mb-1">Closing Notes</label>
                     <textarea
                       rows={3}
-                      placeholder="Reason for closing this project..."
+                      placeholder="reason for closing this project..."
                       className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none bg-red-50"
                       {...register('closingNotes')}
                     />
