@@ -51,6 +51,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const quotedAmount = parseFloat(watch('quotedAmount')) || 0
   const depositPaid = parseFloat(watch('depositPaid')) || 0
   const balanceDue = quotedAmount - depositPaid
+  const invoiced = watch('invoiced')
 
   const resetFormFromProject = (p) => {
     reset({
@@ -64,6 +65,8 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       notes: p.notes || '',
       quotedAmount: p.quotedAmount || '',
       depositPaid: p.depositPaid || '',
+      invoiced: p.invoiced === true || p.invoiced === 'TRUE' || false,
+      invoiceAmount: p.invoiceAmount || '',
       dateReceived: p.dateReceived || '',
       startDate: p.startDate || '',
       targetDate: p.targetDate || '',
@@ -85,6 +88,8 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         notes: '',
         quotedAmount: '',
         depositPaid: '',
+        invoiced: false,
+        invoiceAmount: '',
         dateReceived: '',
         startDate: '',
         targetDate: '',
@@ -310,6 +315,37 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                       {quotedAmount === 0 && depositPaid === 0 ? '—' : formatCurrency(balanceDue)}
                     </span>
                   </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                    <input
+                      type="checkbox"
+                      id="invoiced"
+                      className="accent-shd-brown w-4 h-4 cursor-pointer"
+                      {...register('invoiced')}
+                    />
+                    <label htmlFor="invoiced" className="text-sm font-medium text-gray-600 cursor-pointer select-none">
+                      Invoiced
+                    </label>
+                  </div>
+
+                  {invoiced && (
+                    <Input
+                      label="Final Invoice Amount ($)"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      onKeyDown={(e) => {
+                        const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.']
+                        if (!allowed.includes(e.key) && !e.metaKey && !e.ctrlKey && !/^\d$/.test(e.key)) {
+                          e.preventDefault()
+                        }
+                      }}
+                      {...register('invoiceAmount', {
+                        min: { value: 0, message: 'Amount must be positive' },
+                      })}
+                    />
+                  )}
                 </div>
 
                 {/* Images */}
