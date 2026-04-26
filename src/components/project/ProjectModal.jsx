@@ -370,7 +370,15 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
               {/* Right column */}
               <div className="flex flex-col gap-4">
                 {/* Dates */}
-                <Input label="Date Received" type="date" {...register('dateReceived')} />
+                <Input
+                  label="Date Received"
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  error={errors.dateReceived?.message}
+                  {...register('dateReceived', {
+                    validate: v => !v || v <= new Date().toISOString().split('T')[0] || 'Date received cannot be in the future',
+                  })}
+                />
                 <Input label="Start Date" type="date" {...register('startDate')} />
                 <Input label="Target Completion" type="date" {...register('targetDate')} />
 
