@@ -81,7 +81,8 @@ var PROJECT_COLS = [
   'projectType','description','notes',
   'quotedAmount','depositPaid','balanceDue',
   'dateReceived','startDate','targetDate','lastUpdated',
-  'assignee','sortOrder'
+  'assignee','sortOrder',
+  'invoiced','invoiceAmount'
 ];
 
 function rowToProject(row) {
@@ -89,10 +90,12 @@ function rowToProject(row) {
   for (var i = 0; i < PROJECT_COLS.length; i++) {
     obj[PROJECT_COLS[i]] = row[i] !== undefined ? row[i] : '';
   }
-  obj.quotedAmount = parseFloat(obj.quotedAmount) || 0;
-  obj.depositPaid  = parseFloat(obj.depositPaid)  || 0;
-  obj.balanceDue   = parseFloat(obj.balanceDue)   || 0;
-  obj.sortOrder    = parseInt(obj.sortOrder)       || 0;
+  obj.quotedAmount  = parseFloat(obj.quotedAmount)  || 0;
+  obj.depositPaid   = parseFloat(obj.depositPaid)   || 0;
+  obj.balanceDue    = parseFloat(obj.balanceDue)    || 0;
+  obj.sortOrder     = parseInt(obj.sortOrder)        || 0;
+  obj.invoiced      = obj.invoiced === true || obj.invoiced === 'TRUE';
+  obj.invoiceAmount = parseFloat(obj.invoiceAmount) || 0;
   return obj;
 }
 
@@ -186,8 +189,10 @@ function createProject(body) {
     body.startDate    || '',
     body.targetDate   || '',
     now,
-    body.assignee     || '',
-    sheet.getLastRow()
+    body.assignee      || '',
+    sheet.getLastRow(),
+    body.invoiced      ? true : false,
+    parseFloat(body.invoiceAmount) || 0
   ];
   sheet.appendRow(row);
   return rowToProject(row);
@@ -203,7 +208,8 @@ function updateProject(body) {
         'stage','customerName','projectTitle','phone','email',
         'projectType','description','notes',
         'quotedAmount','depositPaid','dateReceived',
-        'startDate','targetDate','assignee','sortOrder'
+        'startDate','targetDate','assignee','sortOrder',
+        'invoiced','invoiceAmount'
       ];
       for (var u = 0; u < updatable.length; u++) {
         var key = updatable[u];
