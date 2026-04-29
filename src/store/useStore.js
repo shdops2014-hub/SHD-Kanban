@@ -40,6 +40,7 @@ const useStore = create((set, get) => ({
       balanceDue: (parseFloat(data.quotedAmount) || 0) - (parseFloat(data.depositPaid) || 0),
       invoiced: data.invoiced || false,
       invoiceAmount: parseFloat(data.invoiceAmount) || 0,
+      invoiceNumber: data.invoiceNumber || '',
       closingNotes: data.closingNotes || '',
       dateReceived: data.dateReceived || '',
       startDate: data.startDate || '',

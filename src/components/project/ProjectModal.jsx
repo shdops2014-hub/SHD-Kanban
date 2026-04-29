@@ -76,6 +76,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       depositPaid: p.depositPaid || '',
       invoiced: p.invoiced === true || p.invoiced === 'TRUE' || false,
       invoiceAmount: p.invoiceAmount || '',
+      invoiceNumber: p.invoiceNumber || '',
       dateReceived: toDateValue(p.dateReceived),
       startDate: toDateValue(p.startDate),
       targetDate: toDateValue(p.targetDate),
@@ -101,6 +102,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         depositPaid: '',
         invoiced: false,
         invoiceAmount: '',
+        invoiceNumber: '',
         dateReceived: '',
         startDate: '',
         targetDate: '',
@@ -407,22 +409,32 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   </div>
 
                   {invoiced && (
-                    <Input
-                      label="Final Invoice Amount ($)"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      onKeyDown={(e) => {
-                        const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.']
-                        if (!allowed.includes(e.key) && !e.metaKey && !e.ctrlKey && !/^\d$/.test(e.key)) {
-                          e.preventDefault()
-                        }
-                      }}
-                      {...register('invoiceAmount', {
-                        min: { value: 0, message: 'Amount must be positive' },
-                      })}
-                    />
+                    <>
+                      <Input
+                        label="Final Invoice Amount ($)"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        onKeyDown={(e) => {
+                          const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.']
+                          if (!allowed.includes(e.key) && !e.metaKey && !e.ctrlKey && !/^\d$/.test(e.key)) {
+                            e.preventDefault()
+                          }
+                        }}
+                        {...register('invoiceAmount', {
+                          min: { value: 0, message: 'Amount must be positive' },
+                        })}
+                      />
+                      <Input
+                        label="Invoice # *"
+                        placeholder="e.g. INV-001"
+                        error={errors.invoiceNumber?.message}
+                        {...register('invoiceNumber', {
+                          validate: v => !invoiced || !!v?.trim() || 'Invoice # is required when invoiced',
+                        })}
+                      />
+                    </>
                   )}
                 </div>
 
