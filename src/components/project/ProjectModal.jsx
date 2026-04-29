@@ -416,7 +416,18 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                       type="checkbox"
                       id="invoiced"
                       className="accent-shd-brown w-4 h-4 cursor-pointer"
-                      {...register('invoiced')}
+                      {...register('invoiced', {
+                        onChange: (e) => {
+                          // When un-invoicing, revert to Work in Progress if currently Completed/Archived
+                          if (!e.target.checked) {
+                            const currentStage = getValues('stage')
+                            if (currentStage === 'Completed / Archived') {
+                              setValue('stage', 'Work in Progress', { shouldDirty: true })
+                              committedStageRef.current = 'Work in Progress'
+                            }
+                          }
+                        },
+                      })}
                     />
                     <label htmlFor="invoiced" className="text-sm font-medium text-gray-600 cursor-pointer select-none">
                       Invoiced
