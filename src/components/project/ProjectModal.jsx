@@ -27,6 +27,9 @@ function autoStage(data, currentStage) {
   if (parseFloat(data.depositPaid) > 0) {
     target = Math.max(target, STAGE_ORDER['Deposit Received'])
   }
+  if (data.invoiced && parseFloat(data.invoiceAmount) > 0 && data.invoiceNumber?.trim()) {
+    target = Math.max(target, STAGE_ORDER['Completed / Archived'])
+  }
   return STAGES[target]
 }
 
