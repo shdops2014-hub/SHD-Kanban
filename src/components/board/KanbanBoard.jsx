@@ -26,7 +26,15 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
     return matchesSearch && matchesType
   })
 
-  const byStage = (stage) => filtered.filter((p) => p.stage === stage)
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+  const byStage = (stage) => filtered.filter((p) => {
+    if (p.stage !== stage) return false
+    // Hide Completed/Archived cards 30 days after they were archived
+    if (stage === 'Completed / Archived' && p.completedAt) {
+      return Date.now() - new Date(p.completedAt).getTime() < THIRTY_DAYS_MS
+    }
+    return true
+  })
 
   const handleDragStart = ({ active }) => {
     setActiveCard(projects.find((p) => p.projectId === active.id) || null)

@@ -83,7 +83,7 @@ var PROJECT_COLS = [
   'dateReceived','startDate','targetDate','lastUpdated',
   'assignee','sortOrder',
   'invoiced','invoiceAmount','invoiceNumber',
-  'closingNotes'
+  'closingNotes','completedAt'
 ];
 
 // Format a cell value that may be a Date object into a YYYY-MM-DD string.
@@ -116,6 +116,7 @@ function rowToProject(row) {
   obj.startDate     = formatDateCell(obj.startDate);
   obj.targetDate    = formatDateCell(obj.targetDate);
   obj.lastUpdated   = obj.lastUpdated ? String(obj.lastUpdated) : '';
+  obj.completedAt   = obj.completedAt ? String(obj.completedAt) : '';
   return obj;
 }
 
@@ -214,7 +215,8 @@ function createProject(body) {
     body.invoiced      ? true : false,
     parseFloat(body.invoiceAmount) || 0,
     body.invoiceNumber || '',
-    body.closingNotes  || ''
+    body.closingNotes  || '',
+    body.stage === 'Completed / Archived' ? now : ''
   ];
   sheet.appendRow(row);
   return rowToProject(row);
@@ -245,6 +247,14 @@ function updateProject(body) {
       var d = parseFloat(body.depositPaid  !== undefined ? body.depositPaid  : values[i][10]) || 0;
       sheet.getRange(rowNum, PROJECT_COLS.indexOf('balanceDue') + 1).setValue(q - d);
       sheet.getRange(rowNum, PROJECT_COLS.indexOf('lastUpdated') + 1).setValue(new Date().toISOString());
+      // Stamp completedAt the first time a project enters Completed / Archived; never overwrite it
+      if (body.stage === 'Completed / Archived') {
+        var completedAtCol = PROJECT_COLS.indexOf('completedAt') + 1;
+        var existingCompletedAt = sheet.getRange(rowNum, completedAtCol).getValue();
+        if (!existingCompletedAt) {
+          sheet.getRange(rowNum, completedAtCol).setValue(new Date().toISOString());
+        }
+      }
       return rowToProject(sheet.getRange(rowNum, 1, 1, PROJECT_COLS.length).getValues()[0]);
     }
   }
