@@ -5,14 +5,15 @@ import Modal from '../ui/Modal'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 import Select from '../ui/Select'
+import Badge from '../ui/Badge'
 import SubtaskList from './SubtaskList'
 import ImageGallery from './ImageGallery'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import InactiveConfirmDialog from './InactiveConfirmDialog'
 import ProjectFormSkeleton from './ProjectFormSkeleton'
-import { STAGES, STAGE_ORDER, PROJECT_TYPES } from '../../utils/constants'
+import { STAGES, STAGE_ORDER, STAGE_COLORS, PROJECT_TYPES } from '../../utils/constants'
 import { fetchProject, createSubtask as createSubtaskApi, updateSubtask as updateSubtaskApi, deleteSubtask as deleteSubtaskApi } from '../../api/sheetsApi'
-import { formatCurrency, toDateValue } from '../../utils/formatters'
+import { formatCurrency, formatDate, formatPhone, toDateValue } from '../../utils/formatters'
 import useStore from '../../store/useStore'
 
 const STAGE_OPTIONS = STAGES.map(s => ({ value: s, label: s }))
@@ -38,12 +39,24 @@ function daysSince(dateStr) {
   return (Date.now() - new Date(dateStr).getTime()) / 86400000
 }
 
+// Read-only field display used in view mode
+function Field({ label, children }) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="text-sm text-gray-800 whitespace-pre-wrap">{children || '—'}</p>
+    </div>
+  )
+}
+
 export default function ProjectModal({ projectId, open, onClose, defaultStage }) {
   const { addProject, editProject, removeProject, projects, projectCache, cacheProjectDetails, patchProject } = useStore()
 
   const isNew = !projectId
 
   const { register, handleSubmit, watch, reset, getValues, setValue, formState: { errors, isDirty } } = useForm()
+  const [isEditing, setIsEditing] = useState(false)
+  const [projectData, setProjectData] = useState(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [subtasks, setSubtasks] = useState([])
@@ -63,6 +76,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const invoiced = watch('invoiced')
 
   const resetFormFromProject = (p) => {
+    setProjectData(p)
     const stage = p.stage || STAGES[0]
     committedStageRef.current = stage
     reset({
@@ -90,6 +104,8 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   useEffect(() => {
     if (!open) return
     if (isNew) {
+      setIsEditing(true)
+      setProjectData(null)
       committedStageRef.current = defaultStage || STAGES[0]
       reset({
         projectTitle: '',
@@ -115,6 +131,9 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       setCurrentProjectId(null)
       return
     }
+
+    // Existing project: start in view mode
+    setIsEditing(false)
 
     // 1. Pre-fill form instantly from store summary cache
     const cached = projects.find(p => p.projectId === projectId)
@@ -149,9 +168,6 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       .then(res => {
         if (res.success) {
           const p = res.data
-          // Always update the original ref with fresh DB state for diffing on save.
-          // Only update displayed data when there was no cache — with a cache the
-          // user may have already started editing and we must not override their changes.
           originalSubtasksRef.current = p.subtasks || []
           if (!cachedDetail) {
             resetFormFromProject(p)
@@ -166,10 +182,59 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       .finally(() => setDetailsLoading(false))
   }, [open, projectId, isNew])
 
+  // Auto-save subtask changes when in view mode (immediate API flush)
+  const saveSubtasksNow = async (updated) => {
+    const prev = subtasks
+    setSubtasks(updated)
+
+    const originals = originalSubtasksRef.current
+    const toCreate = updated.filter(s => s.subtaskId.startsWith('__temp_'))
+    const toDelete = originals.filter(o => !updated.find(s => s.subtaskId === o.subtaskId))
+    const toUpdate = updated.filter(s => {
+      if (s.subtaskId.startsWith('__temp_')) return false
+      const orig = originals.find(o => o.subtaskId === s.subtaskId)
+      return orig && orig.status !== s.status
+    })
+
+    if (!toCreate.length && !toDelete.length && !toUpdate.length) return
+
+    try {
+      const createResults = await Promise.all(
+        toCreate.map(s => createSubtaskApi({ projectId: currentProjectId, title: s.title, status: s.status }))
+      )
+      await Promise.all([
+        ...toDelete.map(s => deleteSubtaskApi(s.subtaskId)),
+        ...toUpdate.map(s => updateSubtaskApi(s.subtaskId, { status: s.status })),
+      ])
+      // Replace temp IDs with real data from the API
+      let finalUpdated = [...updated]
+      toCreate.forEach((s, i) => {
+        if (createResults[i]?.success) {
+          finalUpdated = finalUpdated.map(fs => fs.subtaskId === s.subtaskId ? createResults[i].data : fs)
+        }
+      })
+      finalUpdated = finalUpdated.filter(s => !toDelete.find(d => d.subtaskId === s.subtaskId))
+      setSubtasks(finalUpdated)
+      originalSubtasksRef.current = finalUpdated
+      patchProject(currentProjectId, { subtaskCount: finalUpdated.length })
+    } catch {
+      setSubtasks(prev)
+      toast.error('Failed to save subtask')
+    }
+  }
+
+  const handleCancelEdit = () => {
+    const source = projectCache[currentProjectId] || projects.find(p => p.projectId === currentProjectId)
+    if (source) resetFormFromProject(source)
+    setSubtasks(originalSubtasksRef.current)
+    setMediaChanged(false)
+    setIsEditing(false)
+  }
+
   const onSubmit = async (data) => {
     // Belt-and-suspenders: if invoiced is checked, invoice # must be present
     if (data.invoiced && !data.invoiceNumber?.trim()) {
-      toast.error('Invoice # is required when Invoiced is checked')
+      toast.error('Invoice # is required')
       return
     }
     setSaving(true)
@@ -246,6 +311,18 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
     }
   }
 
+  const pencilIcon = !isNew && !isEditing ? (
+    <button
+      onClick={() => setIsEditing(true)}
+      className="text-gray-400 hover:text-shd-brown transition-colors p-1 rounded"
+      title="Edit project"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+      </svg>
+    </button>
+  ) : null
+
   return (
     <>
       <Modal
@@ -253,12 +330,14 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         onClose={onClose}
         title={isNew ? 'New Project' : 'Project Details'}
         wide
+        headerActions={pencilIcon}
       >
         <form onSubmit={(e) => e.preventDefault()}>
-            {/* Show skeleton until cache pre-fill has run for existing projects */}
-            {!isNew && !currentProjectId ? (
-              <ProjectFormSkeleton />
-            ) : (
+          {/* Show skeleton until cache pre-fill has run for existing projects */}
+          {!isNew && !currentProjectId ? (
+            <ProjectFormSkeleton />
+          ) : isEditing ? (
+            /* ── EDIT MODE ─────────────────────────────────────────────── */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left column */}
               <div className="flex flex-col gap-4">
@@ -292,7 +371,6 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                         return true
                       },
                       onChange: (e) => {
-                        // Strip non-numeric characters as user types
                         const digits = e.target.value.replace(/\D/g, '').slice(0, 10)
                         e.target.value = digits.length === 0 ? '' :
                           digits.length <= 3 ? `(${digits}` :
@@ -401,7 +479,6 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
 
               {/* Right column */}
               <div className="flex flex-col gap-4">
-                {/* Dates */}
                 <Input
                   label="Date Received"
                   type="date"
@@ -435,7 +512,6 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                       className="accent-shd-brown w-4 h-4 cursor-pointer"
                       {...register('invoiced', {
                         onChange: (e) => {
-                          // When un-invoicing, revert to Work in Progress if currently Completed/Archived
                           if (!e.target.checked) {
                             const currentStage = getValues('stage')
                             if (currentStage === 'Completed / Archived') {
@@ -484,7 +560,6 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 {/* Images */}
                 {!isNew && currentProjectId && (() => {
                   const cachedCount = projects.find(p => p.projectId === currentProjectId)?.imageCount ?? 0
-                  // Only show skeleton if we know images exist — otherwise go straight to empty upload state
                   if (detailsLoading && cachedCount > 0) {
                     return (
                       <div>
@@ -513,31 +588,108 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 })()}
               </div>
             </div>
-            )} {/* end skeleton conditional */}
+          ) : (
+            /* ── VIEW MODE ─────────────────────────────────────────────── */
+            projectData && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left column */}
+                <div className="flex flex-col gap-4">
+                  <Field label="Project Title">{projectData.projectTitle}</Field>
+                  <Field label="Customer Name">{projectData.customerName}</Field>
 
-            {/* Subtasks */}
-            {!isNew && (
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                {detailsLoading
-                  ? <div className="text-xs text-gray-400 animate-pulse py-2">Loading subtasks…</div>
-                  : <SubtaskList
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Phone">{formatPhone(projectData.phone)}</Field>
+                    <Field label="Email">{projectData.email}</Field>
+                  </div>
+
+                  {projectData.projectType && <Field label="Project Type">{projectData.projectType}</Field>}
+
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Stage</p>
+                    <Badge className={STAGE_COLORS[projectData.stage]?.badge || ''}>{projectData.stage}</Badge>
+                  </div>
+
+                  {projectData.description && <Field label="Description">{projectData.description}</Field>}
+                  {projectData.notes && <Field label="Notes">{projectData.notes}</Field>}
+                  {projectData.stage === 'Inactive / Lost' && projectData.closingNotes && (
+                    <div>
+                      <p className="text-xs font-medium text-red-500 uppercase tracking-wide mb-0.5">Closing Notes</p>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{projectData.closingNotes}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right column */}
+                <div className="flex flex-col gap-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Date Received">{formatDate(projectData.dateReceived)}</Field>
+                    <Field label="Start Date">{formatDate(projectData.startDate)}</Field>
+                  </div>
+                  <Field label="Target Completion">{formatDate(projectData.targetDate)}</Field>
+
+                  {/* Financials */}
+                  <div className="bg-gray-50 rounded-xl p-4 flex flex-col gap-3">
+                    <h3 className="font-semibold text-sm text-shd-dark">Financials</h3>
+                    <Field label="Quoted Amount">{projectData.quotedAmount > 0 ? formatCurrency(projectData.quotedAmount) : null}</Field>
+                    <Field label="Deposit Paid">{projectData.depositPaid > 0 ? formatCurrency(projectData.depositPaid) : null}</Field>
+                    {!projectData.invoiced && (projectData.quotedAmount > 0 || projectData.depositPaid > 0) && (
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <span className="text-sm font-medium text-gray-600">Balance Due</span>
+                        <span className={`text-sm font-semibold ${(projectData.quotedAmount - projectData.depositPaid) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {formatCurrency(projectData.quotedAmount - projectData.depositPaid)}
+                        </span>
+                      </div>
+                    )}
+                    {projectData.invoiced && (
+                      <div className="pt-2 border-t border-gray-200 flex flex-col gap-2">
+                        <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5 self-start">✓ Invoiced</span>
+                        <Field label="Final Invoice Amount">{projectData.invoiceAmount > 0 ? formatCurrency(projectData.invoiceAmount) : null}</Field>
+                        <Field label="Invoice #">{projectData.invoiceNumber}</Field>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Images — read-only in view mode */}
+                  {currentProjectId && (
+                    <ImageGallery
                       projectId={currentProjectId}
-                      subtasks={subtasks}
-                      onSubtasksChange={(updated) => { setSubtasks(updated); setMediaChanged(true) }}
+                      images={images}
+                      onImagesChange={() => {}}
+                      readOnly
                     />
-                }
+                  )}
+                </div>
               </div>
-            )}
+            )
+          )}
 
-            {/* Deposit overdue warning */}
-            {!isNew && watch('stage') === 'Deposit Received' && daysSince(projects.find(p => p.projectId === currentProjectId)?.lastUpdated) >= 10 && (
-              <div className="mt-4 flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800">
-                <span className="text-lg leading-none">⚠️</span>
-                <span>This project had a deposit received over 10 days ago. Please provide an update.</span>
-              </div>
-            )}
+          {/* Subtasks — always interactive regardless of mode */}
+          {!isNew && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              {detailsLoading
+                ? <div className="text-xs text-gray-400 animate-pulse py-2">Loading subtasks…</div>
+                : <SubtaskList
+                    projectId={currentProjectId}
+                    subtasks={subtasks}
+                    onSubtasksChange={isEditing
+                      ? (updated) => { setSubtasks(updated); setMediaChanged(true) }
+                      : saveSubtasksNow
+                    }
+                  />
+              }
+            </div>
+          )}
 
-            {/* Actions */}
+          {/* Deposit overdue warning */}
+          {!isNew && watch('stage') === 'Deposit Received' && daysSince(projects.find(p => p.projectId === currentProjectId)?.lastUpdated) >= 10 && (
+            <div className="mt-4 flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800">
+              <span className="text-lg leading-none">⚠️</span>
+              <span>This project had a deposit received over 10 days ago. Please provide an update.</span>
+            </div>
+          )}
+
+          {/* Actions — only shown in edit mode (or for new projects) */}
+          {(isNew || isEditing) && (
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
               <div>
                 {!isNew && (
@@ -547,12 +699,15 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 )}
               </div>
               <div className="flex gap-3">
-                <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                <Button type="button" variant="secondary" onClick={isNew ? onClose : handleCancelEdit}>
+                  Cancel
+                </Button>
                 <Button onClick={handleSubmit(onSubmit)} disabled={saving || (!isNew && !isDirty && !mediaChanged)}>
                   {saving ? 'Saving…' : isNew ? 'Create Project' : 'Save Changes'}
                 </Button>
               </div>
             </div>
+          )}
         </form>
       </Modal>
 

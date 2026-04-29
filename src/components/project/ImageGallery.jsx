@@ -2,7 +2,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { deleteImage, uploadImage } from '../../api/sheetsApi'
 
-export default function ImageGallery({ projectId, images, onImagesChange }) {
+export default function ImageGallery({ projectId, images, onImagesChange, readOnly = false }) {
   const [lightbox, setLightbox] = useState(null)
   const [uploading, setUploading] = useState(false)
 
@@ -51,18 +51,24 @@ export default function ImageGallery({ projectId, images, onImagesChange }) {
         <h3 className="font-semibold text-sm text-shd-dark">
           Images {images.length > 0 && <span className="text-gray-400 font-normal">({images.length})</span>}
         </h3>
-        <label className="cursor-pointer text-xs text-shd-brown hover:underline font-medium">
-          {uploading ? 'Uploading...' : '+ Upload'}
-          <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
-        </label>
+        {!readOnly && (
+          <label className="cursor-pointer text-xs text-shd-brown hover:underline font-medium">
+            {uploading ? 'Uploading...' : '+ Upload'}
+            <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
+          </label>
+        )}
       </div>
 
       {images.length === 0 ? (
-        <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl py-8 cursor-pointer hover:border-shd-brown transition-colors text-gray-400 text-sm">
-          <span className="text-3xl mb-2">🖼</span>
-          <span>Click to upload project images</span>
-          <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
-        </label>
+        readOnly ? (
+          <p className="text-sm text-gray-400">No images attached.</p>
+        ) : (
+          <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl py-8 cursor-pointer hover:border-shd-brown transition-colors text-gray-400 text-sm">
+            <span className="text-3xl mb-2">🖼</span>
+            <span>Click to upload project images</span>
+            <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
+          </label>
+        )
       ) : (
         <div className="grid grid-cols-3 gap-2">
           {images.map((img) => (
@@ -73,12 +79,14 @@ export default function ImageGallery({ projectId, images, onImagesChange }) {
                 className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={() => setLightbox(fullUrl(img.driveUrl))}
               />
-              <button
-                onClick={() => handleDelete(img.imageId)}
-                className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-              >
-                ✕
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => handleDelete(img.imageId)}
+                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           ))}
         </div>
