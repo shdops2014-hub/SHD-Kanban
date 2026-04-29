@@ -200,6 +200,13 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
           patchProject(currentProjectId, { subtaskCount: subtasks.length })
         }
 
+        // Merge saved payload into the detail cache so the next re-open doesn't
+        // show stale values (e.g. invoiceNumber, stage) from a pre-save prefetch.
+        const existingCache = projectCache[currentProjectId]
+        if (existingCache) {
+          cacheProjectDetails(currentProjectId, { ...existingCache, ...payload })
+        }
+
         toast.success('Project saved!')
         onClose()
       } catch (e) {
