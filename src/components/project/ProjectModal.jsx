@@ -167,6 +167,11 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   }, [open, projectId, isNew])
 
   const onSubmit = async (data) => {
+    // Belt-and-suspenders: if invoiced is checked, invoice # must be present
+    if (data.invoiced && !data.invoiceNumber?.trim()) {
+      toast.error('Invoice # is required when Invoiced is checked')
+      return
+    }
     setSaving(true)
     // Auto-advance stage based on financials (never moves backward)
     const resolvedStage = autoStage(data, data.stage || STAGES[0])
@@ -441,7 +446,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                         placeholder="e.g. INV-001"
                         error={errors.invoiceNumber?.message}
                         {...register('invoiceNumber', {
-                          validate: v => !invoiced || !!v?.trim() || 'Invoice # is required when invoiced',
+                          required: 'Invoice # is required when invoiced',
                         })}
                       />
                     </>
