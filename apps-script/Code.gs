@@ -205,7 +205,7 @@ function createProject(body) {
     body.notes        || '',
     quotedAmount,
     depositPaid,
-    quotedAmount - depositPaid,
+    body.invoiced ? 0 : quotedAmount - depositPaid,
     body.dateReceived || '',
     body.startDate    || '',
     body.targetDate   || '',
@@ -245,7 +245,8 @@ function updateProject(body) {
       }
       var q = parseFloat(body.quotedAmount !== undefined ? body.quotedAmount : values[i][9]) || 0;
       var d = parseFloat(body.depositPaid  !== undefined ? body.depositPaid  : values[i][10]) || 0;
-      sheet.getRange(rowNum, PROJECT_COLS.indexOf('balanceDue') + 1).setValue(q - d);
+      var isInvoiced = body.invoiced !== undefined ? body.invoiced : (values[i][18] === true || values[i][18] === 'TRUE');
+      sheet.getRange(rowNum, PROJECT_COLS.indexOf('balanceDue') + 1).setValue(isInvoiced ? 0 : q - d);
       sheet.getRange(rowNum, PROJECT_COLS.indexOf('lastUpdated') + 1).setValue(new Date().toISOString());
       // Stamp completedAt the first time a project enters Completed / Archived; never overwrite it
       if (body.stage === 'Completed / Archived') {
