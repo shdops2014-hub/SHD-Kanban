@@ -63,6 +63,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const [images, setImages] = useState([])
   const [mediaChanged, setMediaChanged] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
   const [inactiveConfirmOpen, setInactiveConfirmOpen] = useState(false)
   const [currentProjectId, setCurrentProjectId] = useState(null)
   // Tracks the DB state of subtasks at open time so we can diff on save
@@ -311,6 +312,15 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
     }
   }
 
+  // Intercept close attempts while in edit mode with unsaved changes
+  const handleClose = () => {
+    if (isEditing && (isDirty || mediaChanged)) {
+      setConfirmDiscard(true)
+    } else {
+      onClose()
+    }
+  }
+
   const pencilIcon = !isNew && !isEditing ? (
     <button
       onClick={() => setIsEditing(true)}
@@ -327,7 +337,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
     <>
       <Modal
         open={open}
-        onClose={onClose}
+        onClose={handleClose}
         title={isNew ? 'New Project' : 'Project Details'}
         wide
         headerActions={pencilIcon}
@@ -699,7 +709,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 )}
               </div>
               <div className="flex gap-3">
-                <Button type="button" variant="secondary" onClick={isNew ? onClose : handleCancelEdit}>
+                <Button type="button" variant="secondary" onClick={isNew ? handleClose : handleCancelEdit}>
                   Cancel
                 </Button>
                 <Button onClick={handleSubmit(onSubmit)} disabled={saving || (!isNew && !isDirty && !mediaChanged)}>
@@ -717,6 +727,17 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
         onConfirm={handleDelete}
         title="Delete Project"
         message="This will permanently delete the project, all subtasks, and all attached images. This cannot be undone."
+      />
+
+      <ConfirmDialog
+        open={confirmDiscard}
+        onClose={() => setConfirmDiscard(false)}
+        onConfirm={onClose}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to close without saving?"
+        confirmLabel="Close Without Saving"
+        confirmVariant="danger"
+        cancelLabel="Return to Edit"
       />
 
       <InactiveConfirmDialog
