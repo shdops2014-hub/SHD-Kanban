@@ -507,14 +507,12 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   <h3 className="font-semibold text-sm text-shd-dark">Financials</h3>
                   <Input label="Quoted Amount ($)" type="number" step="0.01" placeholder="0.00" {...register('quotedAmount')} />
                   <Input label="Deposit Paid ($)" type="number" step="0.01" placeholder="0.00" {...register('depositPaid')} />
-                  {!invoiced && (
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                      <span className="text-sm font-medium text-gray-600">Balance Due</span>
-                      <span className={`text-sm font-semibold ${quotedAmount === 0 && depositPaid === 0 ? 'text-gray-400' : balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {quotedAmount === 0 && depositPaid === 0 ? '—' : formatCurrency(balanceDue)}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                    <span className="text-sm font-medium text-gray-600">Balance Due</span>
+                    <span className={`text-sm font-semibold ${quotedAmount === 0 && depositPaid === 0 ? 'text-gray-400' : balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {quotedAmount === 0 && depositPaid === 0 ? '—' : formatCurrency(balanceDue)}
+                    </span>
+                  </div>
 
                   <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
                     <input
