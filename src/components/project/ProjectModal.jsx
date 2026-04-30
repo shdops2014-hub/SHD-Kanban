@@ -324,12 +324,13 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const pencilIcon = !isNew && !isEditing ? (
     <button
       onClick={() => setIsEditing(true)}
-      className="text-gray-400 hover:text-shd-brown transition-colors p-1 rounded"
+      className="flex items-center gap-1.5 text-gray-400 hover:text-shd-brown transition-colors px-2 py-1 rounded"
       title="Edit project"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
       </svg>
+      <span className="text-sm font-medium">Edit</span>
     </button>
   ) : null
 
@@ -638,7 +639,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   <Field label="Target Completion">{formatDate(projectData.targetDate)}</Field>
 
                   {/* Financials */}
-                  <div className="bg-gray-50 rounded-xl p-4 flex flex-col gap-3">
+                  <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
                     <h3 className="font-semibold text-sm text-shd-dark">Financials</h3>
                     <Field label="Quoted Amount">{projectData.quotedAmount > 0 ? formatCurrency(projectData.quotedAmount) : null}</Field>
                     <Field label="Deposit Paid">{projectData.depositPaid > 0 ? formatCurrency(projectData.depositPaid) : null}</Field>
