@@ -555,34 +555,33 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                     </label>
                   </div>
 
-                  {invoiced && (
-                    <>
-                      <Input
-                        label="Final Invoice Amount ($)"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        onKeyDown={(e) => {
-                          const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.']
-                          if (!allowed.includes(e.key) && !e.metaKey && !e.ctrlKey && !/^\d$/.test(e.key)) {
-                            e.preventDefault()
-                          }
-                        }}
-                        {...register('invoiceAmount', {
-                          min: { value: 0, message: 'Amount must be positive' },
-                        })}
-                      />
-                      <Input
-                        label="Invoice # *"
-                        placeholder="e.g. INV-001"
-                        error={errors.invoiceNumber?.message}
-                        {...register('invoiceNumber', {
-                          required: 'Invoice # is required',
-                        })}
-                      />
-                    </>
-                  )}
+                  {/* Always mounted so react-hook-form retains values; hidden via CSS when not invoiced */}
+                  <div style={{ display: invoiced ? 'flex' : 'none' }} className="flex-col gap-3">
+                    <Input
+                      label="Final Invoice Amount ($)"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      onKeyDown={(e) => {
+                        const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.']
+                        if (!allowed.includes(e.key) && !e.metaKey && !e.ctrlKey && !/^\d$/.test(e.key)) {
+                          e.preventDefault()
+                        }
+                      }}
+                      {...register('invoiceAmount', {
+                        min: { value: 0, message: 'Amount must be positive' },
+                      })}
+                    />
+                    <Input
+                      label="Invoice # *"
+                      placeholder="e.g. INV-001"
+                      error={errors.invoiceNumber?.message}
+                      {...register('invoiceNumber', {
+                        required: 'Invoice # is required',
+                      })}
+                    />
+                  </div>
                 </div>
 
                 {/* Images */}
