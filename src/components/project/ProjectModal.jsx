@@ -75,6 +75,8 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const depositPaid = parseFloat(watch('depositPaid')) || 0
   const balanceDue = quotedAmount - depositPaid
   const invoiced = watch('invoiced')
+  const invoiceAmount = parseFloat(watch('invoiceAmount')) || 0
+  const isFullyInvoiced = invoiced && invoiceAmount > 0
 
   const resetFormFromProject = (p) => {
     setProjectData(p)
@@ -286,12 +288,13 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
           patchProject(currentProjectId, { subtaskCount: subtasks.length })
         }
 
-        // Merge saved payload into the detail cache so the next re-open doesn't
-        // show stale values (e.g. invoiceNumber, stage) from a pre-save prefetch.
-        const existingCache = projectCache[currentProjectId]
-        if (existingCache) {
-          cacheProjectDetails(currentProjectId, { ...existingCache, ...payload })
-        }
+        // Always write the saved payload into the detail cache so the next
+        // re-open never shows stale values (e.g. invoiceNumber, stage).
+        // Create the cache entry even if one didn't exist before.
+        cacheProjectDetails(currentProjectId, {
+          ...(projectCache[currentProjectId] || {}),
+          ...payload,
+        })
 
         toast.success('Project saved!')
         onClose()
@@ -521,12 +524,14 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   <h3 className="font-semibold text-sm text-shd-dark">Financials</h3>
                   <Input label="Quoted Amount ($)" type="number" step="0.01" placeholder="0.00" {...register('quotedAmount')} />
                   <Input label="Deposit Paid ($)" type="number" step="0.01" placeholder="0.00" {...register('depositPaid')} />
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                    <span className="text-sm font-medium text-gray-600">Balance Due</span>
-                    <span className={`text-sm font-semibold ${quotedAmount === 0 && depositPaid === 0 ? 'text-gray-400' : balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {quotedAmount === 0 && depositPaid === 0 ? '—' : formatCurrency(balanceDue)}
-                    </span>
-                  </div>
+                  {!isFullyInvoiced && (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                      <span className="text-sm font-medium text-gray-600">Balance Due</span>
+                      <span className={`text-sm font-semibold ${quotedAmount === 0 && depositPaid === 0 ? 'text-gray-400' : balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {quotedAmount === 0 && depositPaid === 0 ? '—' : formatCurrency(balanceDue)}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
                     <input
