@@ -43,6 +43,10 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
   const checkStageRestriction = (project, targetStage) => {
     const hasDeposit = parseFloat(project.depositPaid) > 0
     const hasQuote = parseFloat(project.quotedAmount) > 0
+    if (targetStage === 'Completed / Archived' && !project.invoiceNumber?.trim()) {
+      toast.error('An invoice number is required to move to Completed / Archived')
+      return false
+    }
     if (hasDeposit && (targetStage === 'Lead / Inquiry' || targetStage === 'Proposal / Quote')) {
       toast.error(`Remove the deposit paid to move this project back to "${targetStage}"`)
       return false

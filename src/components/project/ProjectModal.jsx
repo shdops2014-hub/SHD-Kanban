@@ -242,6 +242,13 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
     // Auto-advance stage based on financials (never moves backward)
     const resolvedStage = autoStage(data, data.stage || STAGES[0])
 
+    // Invoice number required to archive
+    if (resolvedStage === 'Completed / Archived' && !data.invoiceNumber?.trim()) {
+      toast.error('An invoice number is required to move to Completed / Archived')
+      setSaving(false)
+      return
+    }
+
     // All subtasks must be Done before archiving
     if (resolvedStage === 'Completed / Archived' && subtasks.some(s => s.status !== 'Done')) {
       toast.error('All subtasks must be completed before moving to Completed / Archived')
@@ -423,6 +430,13 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                       const { quotedAmount, depositPaid } = getValues()
                       const hasDeposit = parseFloat(depositPaid) > 0
                       const hasQuote = parseFloat(quotedAmount) > 0
+
+                      // Block manual move to Completed/Archived if invoice # is missing
+                      if (targetStage === 'Completed / Archived' && !getValues('invoiceNumber')?.trim()) {
+                        toast.error('An invoice number is required to move to Completed / Archived')
+                        setValue('stage', committedStageRef.current, { shouldDirty: true })
+                        return
+                      }
 
                       // Block manual move to Completed/Archived if subtasks are unfinished
                       if (targetStage === 'Completed / Archived' && subtasks.some(s => s.status !== 'Done')) {
