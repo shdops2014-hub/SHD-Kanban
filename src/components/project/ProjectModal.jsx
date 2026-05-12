@@ -578,7 +578,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                       placeholder="e.g. INV-001"
                       error={errors.invoiceNumber?.message}
                       {...register('invoiceNumber', {
-                        required: 'Invoice # is required',
+                        validate: v => !getValues('invoiced') || !!v?.trim() || 'Invoice # is required',
                       })}
                     />
                   </div>
