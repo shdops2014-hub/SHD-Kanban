@@ -77,9 +77,7 @@ const useStore = create((set, get) => ({
         p.projectId === projectId ? { ...p, ...data } : p
       ),
     }))
-    console.log('[editProject] sending payload:', JSON.stringify({ projectId, invoiced: data.invoiced, invoiceNumber: data.invoiceNumber, invoiceAmount: data.invoiceAmount, stage: data.stage }))
     const res = await api.updateProject(projectId, data)
-    console.log('[editProject] response:', JSON.stringify(res))
     if (!res.success) {
       // revert on failure — reload
       get().loadProjects()
