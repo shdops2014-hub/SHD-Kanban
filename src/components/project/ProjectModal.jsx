@@ -68,6 +68,9 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   const [currentProjectId, setCurrentProjectId] = useState(null)
   // Tracks the DB state of subtasks at open time so we can diff on save
   const originalSubtasksRef = useRef([])
+  // True once the user has added/changed/deleted a subtask in the current session —
+  // prevents the background fetchProject from overwriting optimistic subtask state
+  const userTouchedSubtasksRef = useRef(false)
   // Tracks the last confirmed stage so we can revert the dropdown on cancel
   const committedStageRef = useRef(STAGES[0])
 
@@ -157,6 +160,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
     }
 
     setMediaChanged(false)
+    userTouchedSubtasksRef.current = false
 
     // 3. Always re-fetch in background to stay fresh.
     //    Only show the loading indicator when there is no cached detail yet.
@@ -171,10 +175,17 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       .then(res => {
         if (res.success) {
           const p = res.data
-          originalSubtasksRef.current = p.subtasks || []
+          // Only update subtask state from the fetch if the user hasn't already
+          // made changes — prevents the background fetch from overwriting optimistic
+          // subtask updates (race condition on first open of a newly created project)
+          if (!userTouchedSubtasksRef.current) {
+            originalSubtasksRef.current = p.subtasks || []
+            if (!cachedDetail) {
+              setSubtasks(p.subtasks || [])
+            }
+          }
           if (!cachedDetail) {
             resetFormFromProject(p)
-            setSubtasks(p.subtasks || [])
             setImages(p.images || [])
           }
           setCurrentProjectId(p.projectId)
@@ -187,6 +198,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
 
   // Auto-save subtask changes when in view mode (immediate API flush)
   const saveSubtasksNow = async (updated) => {
+    userTouchedSubtasksRef.current = true
     const prev = subtasks
     setSubtasks(updated)
 
