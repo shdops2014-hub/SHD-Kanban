@@ -27,7 +27,7 @@ export const PROJECT_TYPES = [
   { value: 'upholstery',            label: 'Upholstery' },
   { value: 'custom_furniture',      label: 'Custom Furniture' },
   { value: 'wallpaper',             label: 'Wallpaper' },
-  { value: 'fabric',                label: 'Fabric' },
+  { value: 'drapes',                 label: 'Drapes' },
   { value: 'lighting_decor',        label: 'Lighting & Decor' },
   { value: 'other',                 label: 'Other' },
 ]
