@@ -26,12 +26,17 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
     return matchesSearch && matchesType
   })
 
-  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+  const THIRTY_DAYS_MS   = 30  * 24 * 60 * 60 * 1000
+  const HUNDRED_TWENTY_DAYS_MS = 120 * 24 * 60 * 60 * 1000
   const byStage = (stage) => filtered.filter((p) => {
     if (p.stage !== stage) return false
     // Hide Completed/Archived cards 30 days after they were archived
     if (stage === 'Completed / Archived' && p.completedAt) {
       return Date.now() - new Date(p.completedAt).getTime() < THIRTY_DAYS_MS
+    }
+    // Hide Lead/Inquiry cards 120 days after dateReceived
+    if (stage === 'Lead / Inquiry' && p.dateReceived) {
+      return Date.now() - new Date(p.dateReceived).getTime() < HUNDRED_TWENTY_DAYS_MS
     }
     return true
   })
