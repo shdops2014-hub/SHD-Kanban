@@ -345,7 +345,7 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
 
   const pencilIcon = !isNew && !isEditing ? (
     <button
-      onClick={() => setIsEditing(true)}
+      onClick={() => { userTouchedSubtasksRef.current = true; setIsEditing(true) }}
       className="flex items-center gap-1.5 text-gray-400 hover:text-shd-brown transition-colors px-2 py-1 rounded"
       title="Edit project"
     >
@@ -723,10 +723,8 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 : <SubtaskList
                     projectId={currentProjectId}
                     subtasks={subtasks}
-                    onSubtasksChange={isEditing
-                      ? (updated) => { setSubtasks(updated); setMediaChanged(true) }
-                      : saveSubtasksNow
-                    }
+                    readOnly={!isEditing}
+                    onSubtasksChange={(updated) => { setSubtasks(updated); setMediaChanged(true) }}
                   />
               }
             </div>

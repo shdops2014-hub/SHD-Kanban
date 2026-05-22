@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { SUBTASK_STATUSES } from '../../utils/constants'
 import Button from '../ui/Button'
 
-export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
+export default function SubtaskList({ projectId, subtasks, onSubtasksChange, readOnly = false }) {
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
 
@@ -40,7 +40,9 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
         <h3 className="font-semibold text-sm text-shd-dark">
           Subtasks {subtasks.length > 0 && <span className="text-gray-400 font-normal">({done}/{subtasks.length} done)</span>}
         </h3>
-        <Button variant="ghost" size="sm" onClick={() => setAdding(true)}>+ Add</Button>
+        {!readOnly && (
+          <Button variant="ghost" size="sm" onClick={() => setAdding(true)}>+ Add</Button>
+        )}
       </div>
 
       {/* Progress bar */}
@@ -51,6 +53,10 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
             style={{ width: `${(done / subtasks.length) * 100}%` }}
           />
         </div>
+      )}
+
+      {subtasks.length === 0 && readOnly && (
+        <p className="text-sm text-gray-400">No subtasks.</p>
       )}
 
       <div className="flex flex-col gap-2">
@@ -64,32 +70,37 @@ export default function SubtaskList({ projectId, subtasks, onSubtasksChange }) {
               <input
                 type="checkbox"
                 checked={s.status === 'Done'}
-                onChange={(e) => handleStatusChange(s.subtaskId, e.target.checked ? 'Done' : 'To Do')}
-                className="accent-shd-brown w-4 h-4 flex-shrink-0"
+                onChange={(e) => !readOnly && handleStatusChange(s.subtaskId, e.target.checked ? 'Done' : 'To Do')}
+                disabled={readOnly}
+                className="accent-shd-brown w-4 h-4 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <span className={`flex-1 text-sm ${s.status === 'Done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                 {s.title}
                 {isNew && <span className="ml-1.5 text-xs text-shd-brown font-medium">unsaved</span>}
               </span>
-              <select
-                value={s.status}
-                onChange={(e) => handleStatusChange(s.subtaskId, e.target.value)}
-                className="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white"
-              >
-                {SUBTASK_STATUSES.map(st => <option key={st}>{st}</option>)}
-              </select>
-              <button
-                type="button"
-                onClick={() => handleDelete(s.subtaskId)}
-                className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm"
-              >
-                ✕
-              </button>
+              {!readOnly && (
+                <select
+                  value={s.status}
+                  onChange={(e) => handleStatusChange(s.subtaskId, e.target.value)}
+                  className="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white"
+                >
+                  {SUBTASK_STATUSES.map(st => <option key={st}>{st}</option>)}
+                </select>
+              )}
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(s.subtaskId)}
+                  className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           )
         })}
 
-        {adding && (
+        {!readOnly && adding && (
           <div className="flex items-center gap-2 mt-1">
             <input
               autoFocus
