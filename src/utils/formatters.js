@@ -20,6 +20,17 @@ export const toDateValue = (val) => {
   return match ? match[1] : ''
 }
 
+// Format a raw number for display inside a currency <input> (e.g. "1,234.56")
+export const toCurrencyInputDisplay = (val) => {
+  const n = parseFloat(String(val || '').replace(/,/g, ''))
+  if (isNaN(n) || n === 0) return ''
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+// Strip comma-formatting and return the plain number (for calculations / submission)
+export const fromCurrencyInput = (val) =>
+  parseFloat(String(val || '').replace(/[^0-9.]/g, '')) || 0
+
 export const formatPhone = (val) => {
   if (!val) return '—'
   const digits = val.replace(/\D/g, '')

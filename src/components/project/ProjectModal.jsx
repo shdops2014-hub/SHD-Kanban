@@ -13,7 +13,7 @@ import InactiveConfirmDialog from './InactiveConfirmDialog'
 import ProjectFormSkeleton from './ProjectFormSkeleton'
 import { STAGES, STAGE_ORDER, STAGE_COLORS, PROJECT_TYPES } from '../../utils/constants'
 import { fetchProject, createSubtask as createSubtaskApi, updateSubtask as updateSubtaskApi, deleteSubtask as deleteSubtaskApi } from '../../api/sheetsApi'
-import { formatCurrency, formatDate, formatPhone, toDateValue } from '../../utils/formatters'
+import { formatCurrency, formatDate, formatPhone, toDateValue, toCurrencyInputDisplay, fromCurrencyInput } from '../../utils/formatters'
 import useStore from '../../store/useStore'
 
 const STAGE_OPTIONS = STAGES.map(s => ({ value: s, label: s }))
@@ -74,11 +74,11 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
   // Tracks the last confirmed stage so we can revert the dropdown on cancel
   const committedStageRef = useRef(STAGES[0])
 
-  const quotedAmount = parseFloat(watch('quotedAmount')) || 0
-  const depositPaid = parseFloat(watch('depositPaid')) || 0
+  const quotedAmount = fromCurrencyInput(watch('quotedAmount'))
+  const depositPaid = fromCurrencyInput(watch('depositPaid'))
   const balanceDue = quotedAmount - depositPaid
   const invoiced = watch('invoiced')
-  const invoiceAmount = parseFloat(watch('invoiceAmount')) || 0
+  const invoiceAmount = fromCurrencyInput(watch('invoiceAmount'))
   const isFullyInvoiced = invoiced && invoiceAmount > 0
 
   const resetFormFromProject = (p) => {
@@ -95,10 +95,10 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
       description: p.description || '',
       notes: p.notes || '',
       closingNotes: p.closingNotes || '',
-      quotedAmount: p.quotedAmount || '',
-      depositPaid: p.depositPaid || '',
+      quotedAmount: toCurrencyInputDisplay(p.quotedAmount),
+      depositPaid: toCurrencyInputDisplay(p.depositPaid),
       invoiced: p.invoiced === true || p.invoiced === 'TRUE' || false,
-      invoiceAmount: p.invoiceAmount || '',
+      invoiceAmount: toCurrencyInputDisplay(p.invoiceAmount),
       invoiceNumber: p.invoiceNumber || '',
       dateReceived: toDateValue(p.dateReceived),
       startDate: toDateValue(p.startDate),
@@ -534,8 +534,24 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                 {/* Financials */}
                 <div className="bg-gray-50 rounded-xl p-4 flex flex-col gap-3">
                   <h3 className="font-semibold text-sm text-shd-dark">Financials</h3>
-                  <Input label="Quoted Amount ($)" type="number" step="0.01" placeholder="0.00" {...register('quotedAmount')} />
-                  <Input label="Deposit Paid ($)" type="number" step="0.01" placeholder="0.00" {...register('depositPaid')} />
+                  <Input
+                    label="Quoted Amount ($)"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    {...register('quotedAmount', { setValueAs: fromCurrencyInput })}
+                    onBlur={(e) => { e.target.value = toCurrencyInputDisplay(e.target.value) }}
+                    onFocus={(e) => { const n = fromCurrencyInput(e.target.value); e.target.value = n > 0 ? String(n) : '' }}
+                  />
+                  <Input
+                    label="Deposit Paid ($)"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    {...register('depositPaid', { setValueAs: fromCurrencyInput })}
+                    onBlur={(e) => { e.target.value = toCurrencyInputDisplay(e.target.value) }}
+                    onFocus={(e) => { const n = fromCurrencyInput(e.target.value); e.target.value = n > 0 ? String(n) : '' }}
+                  />
                   {!isFullyInvoiced && (
                     <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                       <span className="text-sm font-medium text-gray-600">Balance Due</span>
@@ -571,19 +587,12 @@ export default function ProjectModal({ projectId, open, onClose, defaultStage })
                   <div style={{ display: invoiced ? 'flex' : 'none' }} className="flex-col gap-3">
                     <Input
                       label="Final Invoice Amount ($)"
-                      type="number"
-                      step="0.01"
-                      min="0"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="0.00"
-                      onKeyDown={(e) => {
-                        const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', '.']
-                        if (!allowed.includes(e.key) && !e.metaKey && !e.ctrlKey && !/^\d$/.test(e.key)) {
-                          e.preventDefault()
-                        }
-                      }}
-                      {...register('invoiceAmount', {
-                        min: { value: 0, message: 'Amount must be positive' },
-                      })}
+                      {...register('invoiceAmount', { setValueAs: fromCurrencyInput })}
+                      onBlur={(e) => { e.target.value = toCurrencyInputDisplay(e.target.value) }}
+                      onFocus={(e) => { const n = fromCurrencyInput(e.target.value); e.target.value = n > 0 ? String(n) : '' }}
                     />
                     <Input
                       label="Invoice # *"
