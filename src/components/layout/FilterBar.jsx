@@ -1,4 +1,4 @@
-import { PROJECT_TYPES, BOARD_STAGES } from '../../utils/constants'
+import { PROJECT_TYPES, STAGES } from '../../utils/constants'
 
 export default function FilterBar({ searchQuery, onSearchChange, typeFilter, onTypeFilterChange, stageFilter, onStageFilterChange }) {
   const hasFilters = searchQuery || typeFilter || stageFilter
@@ -27,7 +27,7 @@ export default function FilterBar({ searchQuery, onSearchChange, typeFilter, onT
         className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-shd-brown"
       >
         <option value="">All Stages</option>
-        {BOARD_STAGES.map(s => (
+        {STAGES.map(s => (
           <option key={s} value={s}>{s}</option>
         ))}
       </select>

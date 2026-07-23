@@ -27,20 +27,20 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
     return matchesSearch && matchesType && matchesStage
   })
 
-  const THIRTY_DAYS_MS   = 30  * 24 * 60 * 60 * 1000
   const HUNDRED_TWENTY_DAYS_MS = 120 * 24 * 60 * 60 * 1000
   const byStage = (stage) => filtered.filter((p) => {
     if (p.stage !== stage) return false
-    // Hide Completed/Archived cards 30 days after they were archived
-    if (stage === 'Completed / Archived' && p.completedAt) {
-      return Date.now() - new Date(p.completedAt).getTime() < THIRTY_DAYS_MS
-    }
-    // Hide Lead/Inquiry cards 120 days after dateReceived
-    if (stage === 'Lead / Inquiry' && p.dateReceived) {
+    // Hide Lead/Inquiry cards 120 days after dateReceived (unless explicitly filtered to that stage)
+    if (stage === 'Lead / Inquiry' && p.dateReceived && stageFilter !== 'Lead / Inquiry') {
       return Date.now() - new Date(p.dateReceived).getTime() < HUNDRED_TWENTY_DAYS_MS
     }
     return true
   })
+
+  // Show the Inactive/Lost column only when that stage is explicitly selected
+  const stagesToRender = stageFilter === 'Inactive / Lost'
+    ? [...BOARD_STAGES, 'Inactive / Lost']
+    : BOARD_STAGES
 
   const handleDragStart = ({ active }) => {
     setActiveCard(projects.find((p) => p.projectId === active.id) || null)
@@ -104,7 +104,7 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-5 overflow-x-auto pb-6">
-        {BOARD_STAGES.map((stage) => (
+        {stagesToRender.map((stage) => (
           <KanbanColumn
             key={stage}
             stage={stage}
