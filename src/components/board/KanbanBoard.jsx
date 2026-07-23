@@ -32,7 +32,8 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
   const byStage = (stage) => filtered.filter((p) => {
     if (p.stage !== stage) return false
     // Hide Completed/Archived cards older than 30 days unless that stage is explicitly selected
-    if (stage === 'Completed / Archived' && p.completedAt && stageFilter !== 'Completed / Archived') {
+    if (stage === 'Completed / Archived' && stageFilter !== 'Completed / Archived') {
+      if (!p.completedAt) return false
       return Date.now() - new Date(p.completedAt).getTime() < THIRTY_DAYS_MS
     }
     // Hide Lead/Inquiry cards older than 120 days unless that stage is explicitly selected
