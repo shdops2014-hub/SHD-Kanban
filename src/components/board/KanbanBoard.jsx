@@ -27,10 +27,15 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
     return matchesSearch && matchesType && matchesStage
   })
 
+  const THIRTY_DAYS_MS         = 30  * 24 * 60 * 60 * 1000
   const HUNDRED_TWENTY_DAYS_MS = 120 * 24 * 60 * 60 * 1000
   const byStage = (stage) => filtered.filter((p) => {
     if (p.stage !== stage) return false
-    // Hide Lead/Inquiry cards 120 days after dateReceived (unless explicitly filtered to that stage)
+    // Hide Completed/Archived cards older than 30 days unless that stage is explicitly selected
+    if (stage === 'Completed / Archived' && p.completedAt && stageFilter !== 'Completed / Archived') {
+      return Date.now() - new Date(p.completedAt).getTime() < THIRTY_DAYS_MS
+    }
+    // Hide Lead/Inquiry cards older than 120 days unless that stage is explicitly selected
     if (stage === 'Lead / Inquiry' && p.dateReceived && stageFilter !== 'Lead / Inquiry') {
       return Date.now() - new Date(p.dateReceived).getTime() < HUNDRED_TWENTY_DAYS_MS
     }
