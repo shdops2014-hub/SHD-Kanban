@@ -30,7 +30,7 @@ jobs:
 
       - name: Build
         env:
-          VITE_API_URL: https://script.google.com/macros/s/AKfycbyBfF30-62xKw1jcziSMwi_vXJBGdaE5Od-1JS_Yc8J0DovgwRDUw38ANxrmPgVyI0zbg/exec
+          VITE_API_URL: https://script.google.com/macros/s/AKfycbz6u-jsCFLTnh9H3pktAz-VjbL5CkGac-JtS7Jwt1M0R4Lh-aERArirtwBJkiodyzKVNQ/exec
         run: npm run build
 
       - name: Deploy to GitHub Pages
