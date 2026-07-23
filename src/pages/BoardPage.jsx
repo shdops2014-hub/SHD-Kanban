@@ -13,6 +13,7 @@ export default function BoardPage() {
   const { loadProjects, loading, error } = useStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
+  const [stageFilter, setStageFilter] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [activeProjectId, setActiveProjectId] = useState(null)
   const [defaultStage, setDefaultStage] = useState(null)
@@ -52,6 +53,8 @@ export default function BoardPage() {
         onSearchChange={setSearchQuery}
         typeFilter={typeFilter}
         onTypeFilterChange={setTypeFilter}
+        stageFilter={stageFilter}
+        onStageFilterChange={setStageFilter}
       />
 
       <main className="flex-1 p-6 overflow-x-auto">
@@ -65,6 +68,7 @@ export default function BoardPage() {
           onAddCard={openNew}
           searchQuery={searchQuery}
           typeFilter={typeFilter}
+          stageFilter={stageFilter}
           loading={loading}
         />
       </main>

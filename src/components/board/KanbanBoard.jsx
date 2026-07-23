@@ -7,7 +7,7 @@ import KanbanCard from './KanbanCard'
 import { STAGES, BOARD_STAGES } from '../../utils/constants'
 import useStore from '../../store/useStore'
 
-export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeFilter, loading }) {
+export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeFilter, stageFilter, loading }) {
   const { projects, moveProject } = useStore()
   const [activeCard, setActiveCard] = useState(null)
 
@@ -23,7 +23,8 @@ export default function KanbanBoard({ onCardClick, onAddCard, searchQuery, typeF
       p.customerName?.toLowerCase().includes(q) ||
       p.projectTitle?.toLowerCase().includes(q)
     const matchesType = !typeFilter || p.projectType === typeFilter
-    return matchesSearch && matchesType
+    const matchesStage = !stageFilter || p.stage === stageFilter
+    return matchesSearch && matchesType && matchesStage
   })
 
   const THIRTY_DAYS_MS   = 30  * 24 * 60 * 60 * 1000
